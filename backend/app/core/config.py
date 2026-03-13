@@ -14,16 +14,15 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # LLM Configuration
-    LLM_PROVIDER: str = "openai"  # openai, anthropic, etc.
-    LLM_MODEL: str = "gpt-4"
-    OPENAI_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None
+    LLM_PROVIDER: str = "gemini"
+    LLM_MODEL: str = "gemini-3-flash-preview"
+    GEMINI_API_KEY: Optional[str] = None
     LLM_TEMPERATURE: float = 0.7
     LLM_MAX_TOKENS: int = 2048
 
     # RAG Configuration
     VECTOR_STORE_TYPE: str = "chroma"  # chroma, pinecone, faiss
-    VECTOR_DIMENSION: int = 384
+    VECTOR_DIMENSION: int = 768
     CHUNK_SIZE: int = 1024
     CHUNK_OVERLAP: int = 256
     SIMILARITY_THRESHOLD: float = 0.5
@@ -35,7 +34,7 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str = "legal-docs"
 
     # Embeddings
-    EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_MODEL: str = "hiieu/halong_embedding"
 
     # Database
     DATABASE_URL: Optional[str] = None

@@ -45,7 +45,7 @@ class ChromaVectorStore(BaseVectorStore):
 
     def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
         """Search for similar documents"""
-        results = self.vectorstore.similarity_search_with_scores(query, k=k)
+        results = self.vectorstore.similarity_search_with_score(query, k=k)
         return [
             {
                 "content": doc.page_content,

@@ -1,92 +1,72 @@
-from abc import ABC, abstractmethod
-from typing import Optional, List
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+import os
+import google.generativeai as genai
 from app.core.config import settings
 
 
-class BaseLLM(ABC):
-    """Abstract base class for LLM providers"""
+PROMPT_TEMPLATE = """Bạn là một trợ lý pháp lý thông minh chuyên về luật pháp Việt Nam.
 
-    @abstractmethod
-    def generate(self, prompt: str, **kwargs) -> str:
-        pass
+Dựa vào các điều luật sau đây, hãy trả lời câu hỏi một cách chi tiết và chính xác.
+Nếu thông tin không đủ để trả lời, hãy nói rõ điều đó.
 
-    @abstractmethod
-    def generate_with_context(self, query: str, context: str) -> str:
-        pass
-
-
-class OpenAILLM(BaseLLM):
-    """OpenAI LLM provider"""
-
-    def __init__(self):
-        if not settings.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY not configured")
-
-        self.llm = ChatOpenAI(
-            model_name=settings.LLM_MODEL,
-            temperature=settings.LLM_TEMPERATURE,
-            max_tokens=settings.LLM_MAX_TOKENS,
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-
-        self.rag_prompt_template = PromptTemplate(
-            input_variables=["context", "question"],
-            template="""Bạn là một trợ lý pháp lý thông minh chuyên về luật pháp Việt Nam.
-
-Dựa vào thông tin sau đây, hãy trả lời câu hỏi một cách chi tiết và chính xác:
-
-THÔNG TIN LIÊN QUAN:
+ĐIỀU LUẬT LIÊN QUAN:
 {context}
 
 CÂU HỎI: {question}
 
 TRẢ LỜI:"""
+
+
+class GeminiLLM:
+    """Gemini LLM provider dùng Google Generative AI SDK"""
+
+    def __init__(self):
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY chưa được cấu hình trong file .env")
+
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        self.model = genai.GenerativeModel(
+            model_name=settings.LLM_MODEL,
+            generation_config=genai.GenerationConfig(
+                temperature=settings.LLM_TEMPERATURE,
+                max_output_tokens=settings.LLM_MAX_TOKENS,
+            )
         )
 
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate text from prompt"""
-        response = self.llm.predict(text=prompt)
-        return response
+    def generate(self, prompt: str) -> str:
+        """Gửi prompt và nhận câu trả lời từ Gemini"""
+        response = self.model.generate_content(prompt)
+        return response.text
 
     def generate_with_context(self, query: str, context: str) -> str:
-        """Generate answer with retrieved context"""
-        prompt = self.rag_prompt_template.format(
-            context=context,
-            question=query
-        )
+        """Trả lời câu hỏi dựa trên context từ RAG"""
+        prompt = PROMPT_TEMPLATE.format(context=context, question=query)
         return self.generate(prompt)
 
 
 class LLMManager:
-    """LLM manager for handling different providers"""
+    """Quản lý LLM provider"""
 
     def __init__(self):
         self.llm = self._init_llm()
 
-    def _init_llm(self) -> BaseLLM:
-        """Initialize LLM based on configuration"""
-        if settings.LLM_PROVIDER == "openai":
-            return OpenAILLM()
+    def _init_llm(self):
+        if settings.LLM_PROVIDER == "gemini":
+            return GeminiLLM()
         else:
-            raise ValueError(f"Unknown LLM provider: {settings.LLM_PROVIDER}")
+            raise ValueError(f"LLM provider không hỗ trợ: {settings.LLM_PROVIDER}")
 
     def generate_answer(self, query: str, context: str) -> str:
-        """Generate answer for a query with context"""
         return self.llm.generate_with_context(query, context)
 
     def generate(self, prompt: str) -> str:
-        """Generate text from prompt"""
         return self.llm.generate(prompt)
 
 
-# Global LLM instance
+# Global instance
 llm_manager = None
 
 
 def get_llm_manager() -> LLMManager:
-    """Get or create LLM manager instance"""
     global llm_manager
     if llm_manager is None:
         try:
