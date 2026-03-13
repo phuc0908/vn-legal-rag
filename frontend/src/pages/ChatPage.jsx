@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import ChatWindow from '../components/ChatWindow'
 import InputArea from '../components/InputArea'
 import Sidebar from '../components/Sidebar'
@@ -6,47 +6,15 @@ import { useChatStore } from '../store/chatStore'
 import '../styles/ChatPage.css'
 
 export default function ChatPage() {
-  const [conversations, setConversations] = useState([])
-  const [currentConversation, setCurrentConversation] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { conversations, currentConversationId, createConversation, deleteConversation, selectConversation } =
+    useChatStore()
 
-  const createNewConversation = () => {
-    const newConversation = {
-      id: Date.now(),
-      title: 'New Conversation',
-      messages: [],
-      createdAt: new Date()
-    }
-    setConversations([newConversation, ...conversations])
-    setCurrentConversation(newConversation)
-  }
-
-  const deleteConversation = (id) => {
-    const filtered = conversations.filter(c => c.id !== id)
-    setConversations(filtered)
-    if (currentConversation?.id === id) {
-      setCurrentConversation(filtered[0] || null)
-    }
-  }
-
-  const selectConversation = (id) => {
-    const selected = conversations.find(c => c.id === id)
-    setCurrentConversation(selected)
-  }
-
-  const updateConversationMessages = (conversationId, message) => {
-    setConversations(prevConversations =>
-      prevConversations.map(conv =>
-        conv.id === conversationId
-          ? { ...conv, messages: [...conv.messages, message] }
-          : conv
-      )
-    )
-  }
+  const currentConversation = conversations.find((c) => c.id === currentConversationId) || null
 
   useEffect(() => {
     if (conversations.length === 0) {
-      createNewConversation()
+      createConversation()
     }
   }, [conversations.length])
 
@@ -55,24 +23,21 @@ export default function ChatPage() {
       <Sidebar
         conversations={conversations}
         currentConversation={currentConversation}
-        onNewChat={createNewConversation}
+        onNewChat={createConversation}
         onSelectChat={selectConversation}
         onDeleteChat={deleteConversation}
         isOpen={sidebarOpen}
       />
       <div className="chat-container">
         <div className="chat-header">
-          <button 
-            className="menu-btn"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
+          <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
-          <h1>Vietnamese Legal RAG</h1>
+          <h1>Trợ Lý Pháp Lý Việt Nam</h1>
           <div className="header-spacer"></div>
         </div>
         <ChatWindow messages={currentConversation?.messages || []} />
-        <InputArea conversation={currentConversation} onAddMessage={updateConversationMessages} />
+        <InputArea conversation={currentConversation} />
       </div>
     </div>
   )

@@ -1,45 +1,44 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { sendMessage } from '../services/api'
+import { useChatStore } from '../store/chatStore'
 import '../styles/InputArea.css'
 
-export default function InputArea({ conversation, onAddMessage }) {
+export default function InputArea({ conversation }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const { addMessage, updateTitle } = useChatStore()
 
   const handleSend = async () => {
     if (!input.trim() || !conversation) return
 
-    // Add user message
-    const userMessage = {
-      role: 'user',
-      content: input
-    }
-    onAddMessage(conversation.id, userMessage)
+    const trimmed = input.trim()
 
+    if (conversation.messages.length === 0) {
+      updateTitle(conversation.id, trimmed.substring(0, 45))
+    }
+
+    addMessage(conversation.id, { role: 'user', content: trimmed })
     setInput('')
     setLoading(true)
 
     try {
-      const response = await sendMessage(input)
-      const assistantMessage = {
+      const response = await sendMessage(trimmed)
+      addMessage(conversation.id, {
         role: 'assistant',
         content: response.answer,
-        sources: response.sources
-      }
-      onAddMessage(conversation.id, assistantMessage)
+        sources: response.sources,
+      })
     } catch (error) {
-      console.error('Error sending message:', error)
-      const errorMessage = {
+      addMessage(conversation.id, {
         role: 'assistant',
-        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.'
-      }
-      onAddMessage(conversation.id, errorMessage)
+        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -53,8 +52,8 @@ export default function InputArea({ conversation, onAddMessage }) {
           className="input-field"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Hỏi về luật pháp Việt Nam..."
+          onKeyDown={handleKeyDown}
+          placeholder="Hỏi về luật pháp Việt Nam... (Enter để gửi, Shift+Enter xuống dòng)"
           disabled={loading}
         />
         <button

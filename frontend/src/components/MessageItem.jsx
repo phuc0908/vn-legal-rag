@@ -7,9 +7,7 @@ export default function MessageItem({ message }) {
 
   return (
     <div className={`message-item ${isUser ? 'user' : 'assistant'}`}>
-      <div className="message-avatar">
-        {isUser ? '👤' : '⚖️'}
-      </div>
+      {!isUser && <div className="message-avatar">⚖️</div>}
       <div className="message-content">
         {isUser ? (
           <p>{message.content}</p>
@@ -31,6 +29,7 @@ export default function MessageItem({ message }) {
           </div>
         )}
       </div>
+      {isUser && <div className="message-avatar">👤</div>}
     </div>
   )
 }
