@@ -1,15 +1,15 @@
 .chat-window {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   scroll-behavior: smooth;
 }
 
 .chat-window::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .chat-window::-webkit-scrollbar-track {
@@ -17,12 +17,12 @@
 }
 
 .chat-window::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
+  background: #d0d0d8;
+  border-radius: 3px;
 }
 
 .chat-window::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #aaa;
 }
 
 .empty-state {
@@ -32,21 +32,26 @@
   justify-content: center;
   height: 100%;
   text-align: center;
+  gap: 10px;
 }
 
 .empty-state h2 {
-  font-size: 32px;
-  color: #333;
-  margin-bottom: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
 }
 
 .empty-state p {
-  font-size: 16px;
-  color: #666;
+  font-size: 14px;
+  color: #888;
+  line-height: 1.6;
 }
 
 .messages {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
 }

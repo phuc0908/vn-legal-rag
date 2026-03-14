@@ -22,7 +22,7 @@ export default function InputArea({ conversation }) {
     setLoading(true)
 
     try {
-      const response = await sendMessage(trimmed)
+      const response = await sendMessage(trimmed, conversation.id)
       addMessage(conversation.id, {
         role: 'assistant',
         content: response.answer,

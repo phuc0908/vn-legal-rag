@@ -9,10 +9,11 @@ const apiClient = axios.create({
   },
 })
 
-export const sendMessage = async (message) => {
+export const sendMessage = async (message, conversationId) => {
   try {
     const response = await apiClient.post('/query', {
-      query: message
+      query: message,
+      conversation_id: conversationId ? String(conversationId) : undefined,
     })
     return response.data
   } catch (error) {

@@ -9,48 +9,53 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  background: #f7f8fc;
 }
 
 .chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 14px 20px;
   background: #fff;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e8eaf0;
 }
 
 .chat-header h1 {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: #1a1a2e;
   flex: 1;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 12px;
 }
 
 .menu-btn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  color: #666;
-  padding: 8px;
+  color: #888;
+  padding: 6px 8px;
   border-radius: 6px;
   transition: background-color 0.2s;
+  line-height: 1;
 }
 
 .menu-btn:hover {
   background-color: #f0f0f0;
+  color: #333;
 }
 
 .header-spacer {
-  width: 40px;
+  width: 36px;
 }
 
 @media (max-width: 768px) {
   .chat-header h1 {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
