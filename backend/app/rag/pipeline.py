@@ -4,7 +4,6 @@ from app.models.schemas import QueryRequest, QueryResponse, SourceDocument
 from app.rag.retrieval import get_rag_system
 from app.rag.llm import get_llm_manager
 
-
 class RAGPipeline:
     """Main RAG pipeline that combines retrieval and generation"""
 
@@ -37,7 +36,7 @@ class RAGPipeline:
         # Convert retrieved documents to SourceDocument objects
         sources = [
             SourceDocument(
-                title=doc.get("metadata", {}).get("title", "Unknown"),
+                title=doc.get("metadata", {}).get("article_title") or doc.get("metadata", {}).get("doc_name", "Unknown"),
                 content=doc["content"][:500],  # First 500 chars
                 relevance_score=float(doc["score"]),
                 metadata=doc.get("metadata", {}),

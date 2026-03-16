@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
 from app.rag.pipeline import get_rag_pipeline
+from app.utils.helpers import save_query_response
 
 router = APIRouter(prefix="/api", tags=["rag"])
 
@@ -20,6 +21,10 @@ async def query(request: QueryRequest):
             )
 
         response = pipeline.process_query(request)
+
+        conversation_id = request.conversation_id or "default"
+        save_query_response(conversation_id, request.query, response)
+
         return response
 
     except Exception as e:

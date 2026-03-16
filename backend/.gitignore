@@ -22,4 +22,5 @@ chroma_db/
 .vscode/
 *.log
 data/
+test_query/
 doc/

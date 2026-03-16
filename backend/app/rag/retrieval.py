@@ -22,7 +22,6 @@ class BaseVectorStore(ABC):
     def delete(self, ids: List[str]) -> bool:
         pass
 
-
 class ChromaVectorStore(BaseVectorStore):
     """Chroma vector store implementation"""
 
@@ -45,7 +44,7 @@ class ChromaVectorStore(BaseVectorStore):
 
     def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
         """Search for similar documents"""
-        results = self.vectorstore.similarity_search_with_score(query, k=k)
+        results = self.vectorstore.similarity_search_with_relevance_scores(query, k=k)
         return [
             {
                 "content": doc.page_content,
@@ -102,6 +101,7 @@ class RAGSystem:
         return [
             r for r in results
             if r["score"] >= settings.SIMILARITY_THRESHOLD
+            and r["score"] <= 1.0
         ]
 
     def add_documents_batch(self, documents: List[Dict]):

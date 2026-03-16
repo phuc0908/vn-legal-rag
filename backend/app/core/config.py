@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 2048
 
     # RAG Configuration
-    VECTOR_STORE_TYPE: str = "chroma"  # chroma, pinecone, faiss
+    VECTOR_STORE_TYPE: str = "chroma"
     VECTOR_DIMENSION: int = 768
     CHUNK_SIZE: int = 1024
     CHUNK_OVERLAP: int = 256
