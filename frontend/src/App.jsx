@@ -1,12 +1,19 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import SearchPage from './pages/SearchPage'
 import ChatPage from './pages/ChatPage'
 import './App.css'
 
 function App() {
   return (
-    <div className="app">
-      <ChatPage />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/tim-kiem" element={<SearchPage />} />
+        <Route path="/tu-van" element={<ChatPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 

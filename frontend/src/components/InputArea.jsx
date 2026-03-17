@@ -3,8 +3,8 @@ import { sendMessage } from '../services/api'
 import { useChatStore } from '../store/chatStore'
 import '../styles/InputArea.css'
 
-export default function InputArea({ conversation }) {
-  const [input, setInput] = useState('')
+export default function InputArea({ conversation, initialQuery = '' }) {
+  const [input, setInput] = useState(initialQuery)
   const [loading, setLoading] = useState(false)
   const { addMessage, updateTitle } = useChatStore()
 

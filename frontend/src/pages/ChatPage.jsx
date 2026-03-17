@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import ChatWindow from '../components/ChatWindow'
 import InputArea from '../components/InputArea'
 import Sidebar from '../components/Sidebar'
@@ -7,6 +8,7 @@ import '../styles/ChatPage.css'
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [searchParams] = useSearchParams()
   const { conversations, currentConversationId, createConversation, deleteConversation, selectConversation } =
     useChatStore()
 
@@ -17,6 +19,9 @@ export default function ChatPage() {
       createConversation()
     }
   }, [conversations.length])
+
+  // Pre-fill initial query from URL ?q=
+  const initialQuery = searchParams.get('q') || ''
 
   return (
     <div className="chat-page">
@@ -33,11 +38,14 @@ export default function ChatPage() {
           <button className="menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
             ☰
           </button>
-          <h1>Trợ Lý Pháp Lý Việt Nam</h1>
-          <div className="header-spacer"></div>
+          <div className="chat-header-center">
+            <Link to="/" className="chat-header-logo">⚖️</Link>
+            <h1>Tư vấn Pháp lý AI</h1>
+          </div>
+          <Link to="/" className="chat-home-link">← Trang chủ</Link>
         </div>
         <ChatWindow messages={currentConversation?.messages || []} />
-        <InputArea conversation={currentConversation} />
+        <InputArea conversation={currentConversation} initialQuery={initialQuery} />
       </div>
     </div>
   )
