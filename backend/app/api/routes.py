@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
 from app.rag.pipeline import get_rag_pipeline
+import app.rag.pipeline as pipeline_module
+import app.rag.llm as llm_module
 from app.utils.helpers import save_query_response
 
 router = APIRouter(prefix="/api", tags=["rag"])
@@ -49,6 +51,15 @@ async def health_check():
         llm_configured=llm_configured,
         vector_store_ready=vector_store_ready
     )
+
+
+@router.post("/reload")
+async def reload_llm():
+    """Reset LLM và pipeline để load key mới từ .env"""
+    llm_module.llm_manager = None
+    pipeline_module.rag_pipeline = None
+    pipeline = get_rag_pipeline()
+    return {"status": "reloaded", "llm_ok": pipeline.llm_manager is not None}
 
 
 @router.post("/documents/add")
