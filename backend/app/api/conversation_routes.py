@@ -4,6 +4,7 @@ from app.core.auth import get_current_user
 from app.models.schemas import ConversationOut, MessageOut
 from app.db.database import query_all, query_one, get_db
 import uuid
+from datetime import datetime
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -32,7 +33,13 @@ async def create_conversation(title: str, current_user: dict = Depends(get_curre
             )
             conn.commit()
             
-    return {"id": conv_id, "user_id": current_user["id"], "title": title, "created_at": None, "messages": []}
+    return {
+        "id": conv_id, 
+        "user_id": current_user["id"], 
+        "title": title, 
+        "created_at": datetime.now(), 
+        "messages": []
+    }
 
 @router.get("/{conversation_id}", response_model=ConversationOut)
 async def get_conversation_detail(conversation_id: str, current_user: dict = Depends(get_current_user)):

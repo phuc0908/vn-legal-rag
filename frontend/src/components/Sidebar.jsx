@@ -16,7 +16,7 @@ export default function Sidebar({
         <span>Luật Hình sự Việt Nam</span>
       </div>
       <div className="sidebar-header">
-        <button className="new-chat-btn" onClick={onNewChat}>
+        <button className="new-chat-btn" onClick={() => onNewChat()}>
           + Cuộc trò chuyện mới
         </button>
       </div>

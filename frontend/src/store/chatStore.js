@@ -32,8 +32,10 @@ export const useChatStore = create(
       },
 
       createConversation: async (title = 'Cuộc trò chuyện mới') => {
+        // If title is an event object, use default
+        const finalTitle = (typeof title === 'string') ? title : 'Cuộc trò chuyện mới'
         try {
-          const newConvData = await createConvApi(title)
+          const newConvData = await createConvApi(finalTitle)
           const newConv = {
             id: newConvData.id,
             title: newConvData.title,
