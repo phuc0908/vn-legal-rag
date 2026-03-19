@@ -64,6 +64,11 @@ export const createConversation = async (title) => {
   return response.data
 }
 
+export const deleteConversation = async (conversationId) => {
+  const response = await apiClient.delete(`/conversations/${conversationId}`)
+  return response.data
+}
+
 // ── Chat API ───────────────────────────────────────────────────────────────────
 
 export const sendMessage = async (message, conversationId) => {

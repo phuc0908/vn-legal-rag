@@ -50,3 +50,20 @@ async def get_conversation_detail(conversation_id: str, current_user: dict = Dep
     messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at ASC", (conversation_id,))
     conv["messages"] = messages
     return conv
+
+@router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_conversation(conversation_id: str, current_user: dict = Depends(get_current_user)):
+    # Check ownership
+    conv = query_one("SELECT id FROM conversations WHERE id = %s AND user_id = %s", (conversation_id, current_user["id"]))
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            # Delete messages first
+            cur.execute("DELETE FROM messages WHERE conversation_id = %s", (conversation_id,))
+            # Delete conversation
+            cur.execute("DELETE FROM conversations WHERE id = %s", (conversation_id,))
+            conn.commit()
+    
+    return None

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { getUserConversations, createConversation as createConvApi } from '../services/api'
+import { getUserConversations, createConversation as createConvApi, deleteConversation as deleteConvApi } from '../services/api'
 
 export const useChatStore = create(
   persist(
@@ -54,17 +54,23 @@ export const useChatStore = create(
         }
       },
 
-      deleteConversation: (id) =>
-        set((state) => {
-          const filtered = state.conversations.filter((c) => c.id !== id)
-          return {
-            conversations: filtered,
-            currentConversationId:
-              state.currentConversationId === id
-                ? (filtered[0]?.id ?? null)
-                : state.currentConversationId,
-          }
-        }),
+      deleteConversation: async (id) => {
+        try {
+          await deleteConvApi(id)
+          set((state) => {
+            const filtered = state.conversations.filter((c) => c.id !== id)
+            return {
+              conversations: filtered,
+              currentConversationId:
+                state.currentConversationId === id
+                  ? (filtered[0]?.id ?? null)
+                  : state.currentConversationId,
+            }
+          })
+        } catch (error) {
+          console.error('Failed to delete conversation:', error)
+        }
+      },
 
       selectConversation: (id) => set({ currentConversationId: id }),
 
