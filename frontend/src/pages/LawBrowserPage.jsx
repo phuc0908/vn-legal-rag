@@ -3,20 +3,29 @@ import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { getChude, getDemuc, getChuong, getDieuList } from '../services/api'
+import { useBrowserStore } from '../store/browserStore'
 import '../styles/LawBrowserPage.css'
 
 export default function LawBrowserPage() {
   const navigate = useNavigate()
 
+  // Global store states
+  const {
+    selectedChude,
+    selectedDemuc,
+    selectedChuong,
+    demucs,
+    chuongs,
+    dieus,
+    resetToChude,
+    resetToDemuc,
+    resetToChuong,
+    setDemucs,
+    setChuongs,
+    setDieus
+  } = useBrowserStore()
+
   const [chudes, setChudes] = useState([])
-  const [demucs, setDemucs] = useState([])
-  const [chuongs, setChuongs] = useState([])
-  const [dieus, setDieus] = useState([])
-
-  const [selectedChude, setSelectedChude] = useState(null)
-  const [selectedDemuc, setSelectedDemuc] = useState(null)
-  const [selectedChuong, setSelectedChuong] = useState(null)
-
   const [loadingChude, setLoadingChude] = useState(true)
   const [loadingDemuc, setLoadingDemuc] = useState(false)
   const [loadingChuong, setLoadingChuong] = useState(false)
@@ -31,12 +40,8 @@ export default function LawBrowserPage() {
 
   const handleSelectChude = async (chude) => {
     if (selectedChude?.id === chude.id) return
-    setSelectedChude(chude)
-    setSelectedDemuc(null)
-    setSelectedChuong(null)
-    setDemucs([])
-    setChuongs([])
-    setDieus([])
+    resetToChude(chude)
+    
     setLoadingDemuc(true)
     try {
       const data = await getDemuc(chude.id)
@@ -48,10 +53,8 @@ export default function LawBrowserPage() {
 
   const handleSelectDemuc = async (demuc) => {
     if (selectedDemuc?.id === demuc.id) return
-    setSelectedDemuc(demuc)
-    setSelectedChuong(null)
-    setChuongs([])
-    setDieus([])
+    resetToDemuc(demuc)
+    
     setLoadingChuong(true)
     try {
       const data = await getChuong(demuc.id)
@@ -73,8 +76,8 @@ export default function LawBrowserPage() {
 
   const handleSelectChuong = async (chuong) => {
     if (selectedChuong?.mapc === chuong.mapc) return
-    setSelectedChuong(chuong)
-    setDieus([])
+    resetToChuong(chuong)
+    
     setLoadingDieu(true)
     try {
       const data = await getDieuList({ chuongId: chuong.mapc })
