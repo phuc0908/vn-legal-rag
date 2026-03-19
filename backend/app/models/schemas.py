@@ -63,3 +63,42 @@ class HealthResponse(BaseModel):
     version: str
     llm_configured: bool
     vector_store_ready: bool
+
+# Auth Schemas
+from pydantic import EmailStr
+
+class UserCreate(BaseModel):
+    username: str
+    email: Optional[EmailStr] = None
+    password: str
+    full_name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+# Conversation Schemas
+class MessageOut(BaseModel):
+    role: str
+    content: str
+    created_at: Optional[datetime] = None
+
+class ConversationOut(BaseModel):
+    id: str
+    user_id: int
+    title: Optional[str] = None
+    created_at: datetime
+    messages: List[MessageOut] = []

@@ -2,15 +2,16 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
 from app.rag.pipeline import get_rag_pipeline
+from app.core.auth import get_current_user
+from app.utils.db_helpers import save_message, update_conversation_title
 import app.rag.pipeline as pipeline_module
 import app.rag.llm as llm_module
-from app.utils.helpers import save_query_response
 
-router = APIRouter(prefix="/api", tags=["rag"])
+router = APIRouter(tags=["rag"])
 
 
 @router.post("/query", response_model=QueryResponse)
-async def query(request: QueryRequest):
+async def query(request: QueryRequest, current_user: dict = Depends(get_current_user)):
     """
     Process a legal query and retrieve relevant documents with AI-generated answer
     """
@@ -24,8 +25,16 @@ async def query(request: QueryRequest):
 
         response = pipeline.process_query(request)
 
-        conversation_id = request.conversation_id or "default"
-        save_query_response(conversation_id, request.query, response)
+        # Persistence for authenticated user
+        if request.conversation_id:
+            # 1. Save User Message
+            save_message(request.conversation_id, "user", request.query)
+            # 2. Save Assistant Response
+            save_message(request.conversation_id, "assistant", response.answer)
+            
+            # 3. Optional: Update title if it's new (simple first 30 chars of query)
+            # (In a real app, you'd generate a title with LLM)
+            # update_conversation_title(request.conversation_id, request.query[:50])
 
         return response
 
@@ -55,7 +64,7 @@ async def health_check():
 
 @router.post("/reload")
 async def reload_llm():
-    """Reset LLM và pipeline để load key mới từ .env"""
+    """Reset LLM and pipeline to load new key from .env"""
     llm_module.llm_manager = None
     pipeline_module.rag_pipeline = None
     pipeline = get_rag_pipeline()

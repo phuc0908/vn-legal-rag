@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
+    # Security
+    SECRET_KEY: str = "your-secret-key-here"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
     # LLM Configuration
     LLM_PROVIDER: str = "gemini"
     LLM_MODEL: str = "gemini-3-flash-preview"

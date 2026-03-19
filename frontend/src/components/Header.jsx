@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useAuthStore } from '../store/authStore'
 import '../styles/Header.css'
 
 export default function Header() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { isAuthenticated, user, logout } = useAuthStore()
 
   const navLinks = [
     { to: '/', label: 'Trang chủ' },
     { to: '/phap-dien', label: 'Pháp điển' },
-    { to: '/tim-kiem', label: 'Tra cứu' },
     { to: '/tu-van', label: 'Tư vấn AI' },
   ]
 
@@ -19,27 +20,40 @@ export default function Header() {
         <Link to="/" className="header-logo">
           <span className="logo-icon">⚖️</span>
           <div className="logo-text">
-            <span className="logo-main">Pháp Lý Việt Nam</span>
-            <span className="logo-sub">Hệ thống tra cứu pháp luật</span>
+            <span className="logo-main">VN Legal RAG</span>
+            <span className="logo-sub">Hệ thống Tư vấn Pháp luật AI</span>
           </div>
         </Link>
 
         <nav className={`header-nav ${menuOpen ? 'open' : ''}`}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`nav-link ${location.pathname === link.to ? 'active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = link.to === '/' 
+              ? location.pathname === '/' 
+              : location.pathname.startsWith(link.to)
+            
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`nav-link ${isActive ? 'active' : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
         </nav>
 
-        <Link to="/tu-van" className="header-cta">
-          Tư vấn ngay
-        </Link>
+        <div className="header-actions">
+          {isAuthenticated ? (
+            <div className="user-profile">
+              <span className="user-name">Chào, {user?.full_name || user?.username}</span>
+              <button className="logout-btn" onClick={logout}>Đăng xuất</button>
+            </div>
+          ) : (
+            <Link to="/login" className="login-btn">Đăng nhập</Link>
+          )}
+        </div>
 
         <button className="mobile-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>
           <span></span>

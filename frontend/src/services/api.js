@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '../store/authStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -8,6 +9,62 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+// Add Auth Header Interceptor
+apiClient.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+}, (error) => {
+  return Promise.reject(error)
+})
+
+// Handle 401 Unauthorized globally
+apiClient.interceptors.response.use((response) => response, (error) => {
+  if (error.response?.status === 401) {
+    useAuthStore.getState().logout()
+  }
+  return Promise.reject(error)
+})
+
+// ── Auth API ───────────────────────────────────────────────────────────────────
+
+export const login = async (username, password) => {
+  const formData = new FormData()
+  formData.append('username', username)
+  formData.append('password', password)
+  
+  const response = await apiClient.post('/auth/login', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return response.data
+}
+
+export const register = async (userData) => {
+  const response = await apiClient.post('/auth/register', userData)
+  return response.data
+}
+
+export const getMe = async () => {
+  const response = await apiClient.get('/auth/me')
+  return response.data
+}
+
+// ── Conversation API ──────────────────────────────────────────────────────────
+
+export const getUserConversations = async () => {
+  const response = await apiClient.get('/conversations/')
+  return response.data
+}
+
+export const createConversation = async (title) => {
+  const response = await apiClient.post('/conversations/', null, { params: { title } })
+  return response.data
+}
+
+// ── Chat API ───────────────────────────────────────────────────────────────────
 
 export const sendMessage = async (message, conversationId) => {
   try {
@@ -22,17 +79,8 @@ export const sendMessage = async (message, conversationId) => {
   }
 }
 
-export const getConversationHistory = async (conversationId) => {
-  try {
-    const response = await apiClient.get(`/conversation/${conversationId}`)
-    return response.data
-  } catch (error) {
-    console.error('API Error:', error)
-    throw error
-  }
-}
-
 // ── Law Database API ───────────────────────────────────────────────────────────
+// ... rest of the file
 
 export const getLawStats = async () => {
   const response = await apiClient.get('/law/stats')

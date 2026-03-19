@@ -3,6 +3,7 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
+  background-color: #f8fafc;
 }
 
 .chat-container {
@@ -90,4 +91,106 @@
   .chat-home-link {
     display: none;
   }
+}
+
+/* Auth Guard Styles */
+.auth-guard-page {
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.auth-guard-container {
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+}
+
+.auth-guard-card {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  text-align: center;
+  border: 1px solid #eef2f6;
+}
+
+.auth-guard-icon {
+  font-size: 60px;
+  margin-bottom: 24px;
+}
+
+.auth-guard-card h2 {
+  font-size: 26px;
+  color: #1e293b;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+
+.auth-guard-card p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  font-size: 15px;
+}
+
+.auth-guard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.auth-guard-actions .login-btn {
+  background: #2563eb;
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.auth-guard-actions .login-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+}
+
+.auth-guard-actions .register-btn {
+  background: white;
+  color: #2563eb;
+  padding: 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  border: 2px solid #2563eb;
+  transition: all 0.2s;
+}
+
+.auth-guard-actions .register-btn:hover {
+  background: #f0f7ff;
+}
+
+.back-home-link {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.back-home-link:hover {
+  color: #1e293b;
+  text-decoration: underline;
+}
+
+.chat-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  font-size: 15px;
 }

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from app.db.database import query_all, query_one
 
-router = APIRouter(prefix="/api/law", tags=["law"])
+router = APIRouter(prefix="/law", tags=["law"])
 
 
 @router.get("/stats")
