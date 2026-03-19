@@ -8,7 +8,8 @@ export default function Header() {
 
   const navLinks = [
     { to: '/', label: 'Trang chủ' },
-    { to: '/tim-kiem', label: 'Tra cứu văn bản' },
+    { to: '/phap-dien', label: 'Pháp điển' },
+    { to: '/tim-kiem', label: 'Tra cứu' },
     { to: '/tu-van', label: 'Tư vấn AI' },
   ]
 

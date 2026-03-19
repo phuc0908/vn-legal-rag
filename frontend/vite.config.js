@@ -6,8 +6,12 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/api/law': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+      },
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       }
     }

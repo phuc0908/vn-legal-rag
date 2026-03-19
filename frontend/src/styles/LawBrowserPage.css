@@ -1,0 +1,254 @@
+.law-browser-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fc;
+}
+
+/* ── Hero ─────────────────────────────── */
+.browser-hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #162040 60%, #1a3a6e 100%);
+  padding: 48px 24px 40px;
+  color: #fff;
+}
+
+.browser-hero-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.browser-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 16px;
+}
+
+.browser-hero h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.browser-hero p {
+  font-size: 15px;
+  color: rgba(255,255,255,0.7);
+  margin: 0;
+}
+
+/* ── Layout ─────────────────────────────── */
+.browser-layout {
+  display: grid;
+  grid-template-columns: 240px 240px 240px 1fr;
+  gap: 0;
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 24px auto;
+  padding: 0 24px 40px;
+  align-items: start;
+}
+
+/* ── Column ─────────────────────────────── */
+.browser-col {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-right: 12px;
+  height: calc(100vh - 260px);
+  display: flex;
+  flex-direction: column;
+}
+
+.browser-col-dieu {
+  margin-right: 0;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.col-icon {
+  font-size: 15px;
+}
+
+.col-count {
+  margin-left: auto;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.col-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.col-loading,
+.col-empty {
+  padding: 24px 16px;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Tree Items ─────────────────────────────── */
+.tree-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  font-size: 13px;
+  color: #374151;
+}
+
+.tree-item:hover {
+  background: #f0f4ff;
+}
+
+.tree-item.active {
+  background: #eff6ff;
+  border-left: 3px solid #2563eb;
+  color: #1d4ed8;
+}
+
+.item-stt {
+  flex-shrink: 0;
+  width: 20px;
+  color: #9ca3af;
+  font-size: 11px;
+  padding-top: 1px;
+}
+
+.item-chimuc {
+  flex-shrink: 0;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.item-text {
+  flex: 1;
+  line-height: 1.45;
+}
+
+.item-arrow {
+  flex-shrink: 0;
+  color: #d1d5db;
+  font-size: 16px;
+  margin-left: auto;
+}
+
+.tree-item.active .item-arrow {
+  color: #2563eb;
+}
+
+/* ── Điều List Items ─────────────────────────────── */
+.dieu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  text-decoration: none;
+  color: #374151;
+  transition: background 0.15s;
+}
+
+.dieu-item:hover {
+  background: #f0f4ff;
+}
+
+.dieu-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c0392b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dieu-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #1f2937;
+}
+
+.dieu-vb {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 1px;
+}
+
+/* ── Scrollbar styling ─────────────────────────────── */
+.col-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.col-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.col-body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 1024px) {
+  .browser-layout {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .browser-col {
+    height: 300px;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  .browser-col-dieu {
+    grid-column: 1 / -1;
+    height: 400px;
+  }
+}
+
+@media (max-width: 640px) {
+  .browser-layout {
+    grid-template-columns: 1fr;
+    padding: 0 12px 32px;
+  }
+
+  .browser-hero {
+    padding: 32px 16px 28px;
+  }
+
+  .browser-hero h1 {
+    font-size: 24px;
+  }
+}

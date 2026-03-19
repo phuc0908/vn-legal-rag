@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
+import { getLawStats } from '../services/api'
 import '../styles/HomePage.css'
 
 const LAW_CATEGORIES = [
@@ -26,7 +27,12 @@ const COMMON_QUESTIONS = [
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [lawStats, setLawStats] = useState(null)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    getLawStats().then(setLawStats).catch(() => {})
+  }, [])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -88,18 +94,18 @@ export default function HomePage() {
       <section className="stats-bar">
         <div className="stats-inner">
           <div className="stat-item">
-            <strong>15+</strong>
-            <span>Bộ luật & Luật</span>
+            <strong>{lawStats ? lawStats.chude : '...'}</strong>
+            <span>Chủ đề pháp luật</span>
           </div>
           <div className="stat-divider" />
           <div className="stat-item">
-            <strong>500+</strong>
-            <span>Điều khoản</span>
+            <strong>{lawStats ? lawStats.demuc : '...'}</strong>
+            <span>Đề mục</span>
           </div>
           <div className="stat-divider" />
           <div className="stat-item">
-            <strong>AI</strong>
-            <span>Tư vấn thông minh</span>
+            <strong>{lawStats ? lawStats.dieu.toLocaleString() : '...'}</strong>
+            <span>Điều luật</span>
           </div>
           <div className="stat-divider" />
           <div className="stat-item">
@@ -128,6 +134,43 @@ export default function HomePage() {
                 <span className="cat-arrow">→</span>
               </button>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pháp điển Section */}
+      <section className="phapdien-section">
+        <div className="section-inner">
+          <div className="phapdien-card">
+            <div className="phapdien-left">
+              <div className="phapdien-badge">Mới</div>
+              <h2>Hệ thống Pháp điển</h2>
+              <p>
+                Tra cứu toàn bộ văn bản pháp luật Việt Nam theo cấu trúc phân cấp chính thức:
+                Chủ đề → Đề mục → Chương → Điều. Dữ liệu trực tiếp từ hệ thống pháp điển quốc gia.
+              </p>
+              <div className="phapdien-stats">
+                {lawStats && (
+                  <>
+                    <span><strong>{lawStats.chude}</strong> Chủ đề</span>
+                    <span><strong>{lawStats.demuc}</strong> Đề mục</span>
+                    <span><strong>{lawStats.chuong}</strong> Chương</span>
+                    <span><strong>{lawStats.dieu.toLocaleString()}</strong> Điều</span>
+                  </>
+                )}
+              </div>
+              <Link to="/phap-dien" className="phapdien-btn">
+                Duyệt Pháp điển →
+              </Link>
+            </div>
+            <div className="phapdien-right">
+              <div className="phapdien-tree">
+                <div className="ptree-item ptree-l1">📂 Chủ đề</div>
+                <div className="ptree-item ptree-l2">📋 Đề mục</div>
+                <div className="ptree-item ptree-l3">📑 Chương</div>
+                <div className="ptree-item ptree-l4">📄 Điều luật</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
