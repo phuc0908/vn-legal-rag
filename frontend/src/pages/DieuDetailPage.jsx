@@ -28,6 +28,44 @@ export default function DieuDetailPage() {
     navigate(`/tu-van?q=${encodeURIComponent(q)}`)
   }
 
+  // Format content to handle lists like 1., 2., a), b)
+  const formatLegalContent = (text) => {
+    if (!text) return ''
+    
+    // 1. Normalize line breaks (replace multiple newlines with one)
+    let processed = text.replace(/\n\s*\n+/g, '\n')
+    
+    // 2. Insert newlines before 1. 2. 3. and a) b) c) if not already there
+    processed = processed.replace(/(\s|^)(\d+\.)\s/g, '\n$2 ')
+    processed = processed.replace(/(\s|^)([a-z]\))\s/g, '\n$2 ')
+    
+    // 3. Split into lines and wrap in styled containers with state tracking
+    const lines = processed.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+    let inSubItem = false
+    
+    return lines.map(line => {
+      // Sub-items (a, b, c...)
+      if (/^[a-z]\)/i.test(line)) {
+        inSubItem = true
+        return `<div class="dieu-sub-item">${line}</div>`
+      }
+      
+      // Top-level items (1, 2, 3...)
+      if (/^\d+\./.test(line)) {
+        inSubItem = false
+        return `<div class="dieu-item">${line}</div>`
+      }
+      
+      // Process lines that should follow sub-item indentation (like "Ví dụ:")
+      if (inSubItem && (line.toLowerCase().startsWith('ví dụ') || line.toLowerCase().startsWith('ghi chú'))) {
+        return `<div class="dieu-sub-item-text">${line}</div>`
+      }
+      
+      // Regular text
+      return `<div class="dieu-text-line">${line}</div>`
+    }).join('')
+  }
+
   return (
     <div className="dieu-detail-page">
       <Header />
@@ -84,7 +122,7 @@ export default function DieuDetailPage() {
                 {dieu.noidung ? (
                   <div
                     className="article-noidung"
-                    dangerouslySetInnerHTML={{ __html: dieu.noidung }}
+                    dangerouslySetInnerHTML={{ __html: formatLegalContent(dieu.noidung) }}
                   />
                 ) : (
                   <p className="no-content">Chưa có nội dung</p>
