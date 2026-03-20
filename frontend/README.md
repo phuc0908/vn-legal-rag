@@ -1,68 +1,77 @@
-# Vietnamese Legal RAG - Frontend
+# Frontend — VN Legal RAG
 
-React application with a ChatGPT-like interface for legal question answering.
+Giao diện hỏi đáp pháp luật Việt Nam, kiểu ChatGPT.
 
-## Features
+## Công nghệ
 
-ChatGPT-like conversation interface, source document citations, conversation history management, responsive design, markdown support for formatted answers.
+| Thành phần | Chi tiết |
+|-----------|---------|
+| Framework | React 18 + Vite |
+| State | Zustand |
+| HTTP | Axios |
+| Markdown | react-markdown |
+| Style | CSS3 |
 
-## Tech Stack
+## Cấu trúc thư mục
 
-React 18, Vite, Zustand, Axios, React Markdown, CSS3.
-
-## Getting Started
-
-Prerequisites: Node.js 18+, npm or yarn
-
-Installation:
-```bash
-npm install
-cp .env.example .env
-npm run dev
+```
+frontend/src/
+├── components/
+│   ├── Sidebar.jsx         # Danh sách hội thoại, user info, logout
+│   ├── ChatWindow.jsx      # Khu vực hiển thị messages
+│   ├── MessageItem.jsx     # Render từng message (markdown + sources)
+│   └── InputArea.jsx       # Ô nhập câu hỏi
+├── pages/
+│   └── ChatPage.jsx        # Trang chat chính
+├── services/
+│   └── api.js              # Axios calls đến backend
+├── store/
+│   └── chatStore.js        # Zustand store (conversations, messages)
+├── styles/                 # CSS files
+├── App.jsx
+└── main.jsx
 ```
 
-Access at http://localhost:3000
+## Cài đặt
 
-## Project Structure
+```bash
+npm install
+```
 
-src/
-- components/: React components (ChatWindow, InputArea, MessageItem, Sidebar)
-- pages/: Page components (ChatPage)
-- services/: API integration (api.js)
-- store/: State management (chatStore.js)
-- styles/: CSS files
-- App.jsx, main.jsx
+## Cấu hình `.env`
 
-## Available Scripts
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-npm run dev - Start development server
-npm run build - Build for production
-npm run preview - Preview production build
-npm run lint - Run linter
+## Chạy
 
-## API Integration
+```bash
+npm run dev      # Development (http://localhost:3000)
+npm run build    # Build production
+npm run preview  # Preview bản build
+npm run lint     # Kiểm tra lint
+```
 
-Query endpoint: POST /api/query
-Request: { query, conversation_id?, top_k? }
-Response: { query, answer, sources, processing_time, model_used }
+## Tích hợp API
 
-Health check: GET /api/health
+Backend proxy qua Vite dev server (`/api` → `http://localhost:8000/api`).
 
-## Environment Variables
+| Endpoint | Mô tả |
+|----------|-------|
+| `POST /api/auth/login` | Đăng nhập |
+| `POST /api/auth/register` | Đăng ký |
+| `GET /api/auth/me` | Thông tin user |
+| `POST /api/query` | Gửi câu hỏi pháp luật |
+| `GET /api/conversations` | Lấy danh sách hội thoại |
+| `POST /api/conversations` | Tạo hội thoại mới |
+| `DELETE /api/conversations/{id}` | Xóa hội thoại |
 
-VITE_API_URL - Backend API endpoint (default: http://localhost:8000/api)
+## Tính năng
 
-## Customization
-
-Change theme colors in src/styles/*.css
-Modify API endpoint in .env
-Add new components in src/components/
-
-## Browser Support
-
-Chrome/Edge, Firefox, Safari, mobile browsers (latest versions)
-
-## License
-
-MIT
-
+- Đăng ký / đăng nhập tài khoản
+- Giao diện chat kiểu ChatGPT
+- Lịch sử hội thoại (sidebar)
+- Trích dẫn nguồn văn bản pháp luật
+- Render Markdown trong câu trả lời
+- Xóa hội thoại

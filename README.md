@@ -1,47 +1,71 @@
-# Vietnamese Legal RAG
+# VN Legal RAG
 
-A web application for Vietnamese legal document retrieval and question answering using React frontend and Python RAG backend.
+Ứng dụng hỏi đáp pháp luật Việt Nam sử dụng kỹ thuật RAG (Retrieval-Augmented Generation).
 
-## Project Structure
+## Kiến trúc
 
-Frontend: React 18 with Vite, Zustand state management, and Axios HTTP client
-Backend: FastAPI with LangChain RAG, Chroma vector store, and LLM integration
+```
+vn-legal-rag/
+├── backend/     # FastAPI + RAG pipeline
+└── frontend/    # React + Vite
+```
 
-## Quick Start
+| Thành phần | Công nghệ |
+|-----------|-----------|
+| Backend | FastAPI, LangChain, ChromaDB, Google Gemini |
+| Frontend | React 18, Vite, Zustand, Axios |
+| Database | MySQL (pháp điển + văn bản pháp luật) |
+| Embedding | `hiieu/halong_embedding` (Sentence Transformers) |
+| Vector Store | ChromaDB |
 
-Frontend:
+## Luồng hoạt động
+
+```
+Câu hỏi người dùng
+    → Embedding câu hỏi
+    → Tìm văn bản liên quan trong ChromaDB (nguồn: vb_chimuc)
+    → Ghép context → Gemini sinh câu trả lời
+    → Trả về kết quả có trích dẫn nguồn
+```
+
+## Cài đặt nhanh
+
+### Yêu cầu
+- Python 3.10+
+- Node.js 18+
+- MySQL đang chạy với database `law`
+
+### 1. Backend
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # Linux/macOS
+
+pip install -r requirements.txt
+cp .env.example .env           # Điền GEMINI_API_KEY và thông tin DB
+python scripts/setup_db.py     # Tạo bảng users, conversations, messages
+python scripts/ingest_from_db.py --reset  # Index vb_chimuc → ChromaDB
+python main.py
+```
+
+### 2. Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Access at http://localhost:3000
 
-Backend:
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-python main.py
-```
-Access at http://localhost:8000
+| Service | URL |
+|---------|-----|
+| Backend API | http://localhost:8000 |
+| Frontend | http://localhost:3000 |
+| Swagger UI | http://localhost:8000/docs |
 
-## Features
+## Tài liệu chi tiết
 
-Frontend: ChatGPT-like interface, conversation history, source citations, responsive design
-Backend: RAG pipeline, document retrieval, LLM generation, configurable parameters
-
-## Configuration
-
-Backend: Edit .env with OpenAI API key and settings
-Frontend: Edit .env with API endpoint
-
-## API Endpoints
-
-GET / - Root endpoint
-GET /api/health - Health check
-POST /api/query - Query the RAG system
-POST /api/documents/add - Add document to knowledge base
-
+- [Backend README](backend/README.md)
+- [Frontend README](frontend/README.md)
+- [Cấu trúc Database](backend/DATABASE.md)

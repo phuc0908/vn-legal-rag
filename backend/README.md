@@ -1,86 +1,153 @@
-# Vietnamese Legal RAG Backend
+# Backend — VN Legal RAG
 
-FastAPI-based backend for Vietnamese legal document retrieval and question answering using RAG with LLMs.
+FastAPI backend cho hệ thống hỏi đáp pháp luật Việt Nam sử dụng RAG.
 
-## Features
+## Công nghệ
 
-RAG Pipeline with document retrieval and LLM answer generation, LLM Integration (OpenAI/Anthropic), Vector Store (Chroma/Pinecone), Specialized for Vietnamese legal documents, Configurable parameters and models.
+| Thành phần | Chi tiết |
+|-----------|---------|
+| Framework | FastAPI |
+| LLM | Google Gemini (`gemini-3-flash-preview`) |
+| Embedding | `hiieu/halong_embedding` (Sentence Transformers) |
+| Vector Store | ChromaDB |
+| Database | MySQL (PyMySQL) |
+| Auth | JWT (python-jose + bcrypt) |
+| RAG | LangChain + ChromaDB |
 
-## Project Structure
+## Cấu trúc thư mục
 
-app/
-- api/: API routes and endpoints
-- core/: Configuration and settings
-- models/: Pydantic schemas
-- rag/: RAG system (retrieval, LLM, pipeline)
-- utils/: Helper functions
+```
+backend/
+├── main.py                     # Entry point FastAPI
+├── requirements.txt
+├── .env                        # Cấu hình (không commit)
+├── chroma_db/                  # Dữ liệu vector (auto tạo khi ingest)
+│
+├── app/
+│   ├── api/
+│   │   ├── routes.py           # POST /query, GET /health
+│   │   ├── auth_routes.py      # POST /auth/register, /auth/login, GET /auth/me
+│   │   ├── conversation_routes.py  # CRUD conversations & messages
+│   │   ├── law_routes.py       # Duyệt pháp điển (chủ đề, điều, tìm kiếm)
+│   │   └── dependencies.py     # get_current_user dependency
+│   ├── core/
+│   │   ├── config.py           # Settings (pydantic-settings)
+│   │   └── auth.py             # JWT, bcrypt utilities
+│   ├── db/
+│   │   └── database.py         # MySQL connection, query_one, query_all
+│   ├── models/
+│   │   └── schemas.py          # Pydantic request/response schemas
+│   ├── rag/
+│   │   ├── pipeline.py         # RAGPipeline: retrieval + generation
+│   │   ├── retrieval.py        # ChromaVectorStore, RAGSystem
+│   │   └── llm.py              # GeminiLLM, LLMManager, PROMPT_TEMPLATE
+│   └── utils/
+│       ├── helpers.py
+│       └── db_helpers.py       # save_message, update_conversation_title
+│
+└── scripts/
+    ├── setup_db.py             # Tạo bảng users/conversations/messages
+    ├── ingest_from_db.py       # Index vb_chimuc → ChromaDB (dùng script này)
+    ├── ingest_legal_docx.py    # Index từ file .docx (legacy)
+    ├── migrate.py
+    └── test_query.py
+```
 
-tests/: Unit and integration tests
-data/: Document storage
-main.py: Entry point
-requirements.txt: Dependencies
+## Cài đặt
 
-## Installation
-
-1. Create virtual environment
 ```bash
 python -m venv venv
 venv\Scripts\activate
-```
 
-2. Install dependencies
-```bash
 pip install -r requirements.txt
 ```
 
-3. Configure environment
-```bash
-cp .env.example .env
+## Cấu hình `.env`
+
+```env
+# LLM
+GEMINI_API_KEY=your_key_here
+LLM_MODEL=gemini-3-flash-preview
+
+# Database
+DB_HOST=localhost
+DB_PORT=3307
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=law
+
+# Security
+SECRET_KEY=your_random_secret_key
+
+# RAG
+SIMILARITY_THRESHOLD=0.5
+TOP_K_RETRIEVAL=5
 ```
 
-4. Run server
+## Khởi chạy lần đầu
+
 ```bash
+# 1. Tạo bảng users, conversations, messages
+python scripts/setup_db.py
+
+# 2. Index toàn bộ vb_chimuc vào ChromaDB
+#    --reset: xóa ChromaDB cũ trước khi ingest
+python scripts/ingest_from_db.py --reset
+
+# 3. Chạy server
 python main.py
 ```
 
-Server at http://localhost:8000
+> Server chạy tại http://localhost:8000
+> Swagger UI: http://localhost:8000/docs
 
-## Configuration
+## Re-index (khi dữ liệu DB thay đổi)
 
-Key environment variables:
-- OPENAI_API_KEY: OpenAI API key
-- LLM_MODEL: Model to use (default: gpt-4)
-- VECTOR_STORE_TYPE: Vector store (chroma, pinecone)
-- CHUNK_SIZE: Document chunk size (default: 1024)
-- TOP_K_RETRIEVAL: Documents to retrieve (default: 5)
+```bash
+python scripts/ingest_from_db.py --reset
+```
+
+Script đọc bảng `vb_chimuc` theo batch 500 rows, mỗi row = 1 vector trong ChromaDB.
 
 ## API Endpoints
 
-GET / - Root endpoint
-GET /api/health - Health check
-POST /api/query - Query the RAG system
-POST /api/documents/add - Add document to knowledge base
+### Auth
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/api/auth/register` | Đăng ký tài khoản |
+| POST | `/api/auth/login` | Đăng nhập, nhận JWT |
+| GET | `/api/auth/me` | Thông tin user hiện tại |
 
-## Query Endpoint
+### RAG
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| POST | `/api/query` | Hỏi đáp pháp luật | Có |
+| GET | `/api/health` | Kiểm tra trạng thái hệ thống | Không |
 
-POST /api/query
-Request: {"query": "Luật giao thông...", "top_k": 5}
-Response: {"query": "...", "answer": "...", "sources": [...], "processing_time": 2.5}
+### Conversations
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| GET | `/api/conversations` | Danh sách hội thoại | Có |
+| POST | `/api/conversations` | Tạo hội thoại mới | Có |
+| GET | `/api/conversations/{id}` | Chi tiết + messages | Có |
+| DELETE | `/api/conversations/{id}` | Xóa hội thoại | Có |
 
-## Development
+### Pháp điển
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| GET | `/api/law/stats` | Thống kê số lượng điều/chương |
+| GET | `/api/law/chude` | Danh sách chủ đề |
+| GET | `/api/law/demuc?chude_id=` | Đề mục theo chủ đề |
+| GET | `/api/law/chuong?demuc_id=` | Chương theo đề mục |
+| GET | `/api/law/dieu/list?chuong_id=` | Điều theo chương |
+| GET | `/api/law/dieu/{mapc}` | Nội dung đầy đủ một điều |
+| GET | `/api/law/search?q=` | Tìm kiếm điều theo từ khóa |
 
-Code formatting: black app/ main.py
-Linting: flake8 app/ main.py
-Type checking: mypy app/ main.py
-Tests: pytest tests/
+## Ví dụ query
 
-## Architecture
-
-Retrieval: Documents embedded using Sentence Transformers and stored in vector database
-Generation: Retrieved context passed to LLM with tailored prompt
-Pipeline: QueryRequest > Retrieval > LLM Generation > QueryResponse
-
-## License
-
-MIT
-
+```bash
+curl -X POST http://localhost:8000/api/query \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Thủ tục ly hôn theo luật hôn nhân gia đình?", "top_k": 5}'
+```
