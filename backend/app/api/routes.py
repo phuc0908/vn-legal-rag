@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
+import traceback
 from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
 from app.rag.pipeline import get_rag_pipeline
 from app.core.auth import get_current_user
@@ -27,10 +28,12 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
 
         # Persistence for authenticated user
         if request.conversation_id:
-            # 1. Save User Message
-            save_message(request.conversation_id, "user", request.query)
-            # 2. Save Assistant Response
-            save_message(request.conversation_id, "assistant", response.answer)
+            try:
+                save_message(request.conversation_id, "user", request.query)
+                save_message(request.conversation_id, "assistant", response.answer)
+            except Exception as db_err:
+                # Không fail toàn bộ request nếu chỉ lỗi lưu DB
+                print(f"Warning: failed to save messages to DB: {db_err}")
             
             # 3. Optional: Update title if it's new (simple first 30 chars of query)
             # (In a real app, you'd generate a title with LLM)
@@ -39,6 +42,7 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
         return response
 
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Error processing query: {str(e)}"

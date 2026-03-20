@@ -21,7 +21,9 @@ export const useChatStore = create(
             createdAt: c.created_at
           }))
           set({ conversations: formatted })
-          if (formatted.length > 0 && !get().currentConversationId) {
+          const currentId = get().currentConversationId
+          const isValid = currentId && formatted.find(c => c.id === currentId)
+          if (!isValid && formatted.length > 0) {
             set({ currentConversationId: formatted[0].id })
           }
         } catch (error) {

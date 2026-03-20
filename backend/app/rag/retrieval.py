@@ -44,7 +44,9 @@ class ChromaVectorStore(BaseVectorStore):
 
     def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
         """Search for similar documents"""
+        print(f"  [CHROMA] similarity_search k={k} | query='{query[:80]}...'")
         results = self.vectorstore.similarity_search_with_relevance_scores(query, k=k)
+        print(f"  [CHROMA] Raw results: {len(results)} — scores: {[round(s, 4) for _, s in results]}")
         return [
             {
                 "content": doc.page_content,
@@ -98,11 +100,8 @@ class RAGSystem:
     def retrieve(self, query: str, top_k: int = 5) -> List[Dict]:
         """Retrieve relevant documents"""
         results = self.vector_store.similarity_search(query, k=top_k)
-        return [
-            r for r in results
-            if r["score"] >= settings.SIMILARITY_THRESHOLD
-            and r["score"] <= 1.0
-        ]
+        print(f"  [RETRIEVAL] Lấy top {len(results)} docs (không lọc ngưỡng)")
+        return results
 
     def add_documents_batch(self, documents: List[Dict]):
         """Add multiple documents"""
