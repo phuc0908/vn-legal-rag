@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "gemini"
     LLM_MODEL: str = "gemini-3-flash-preview"
     GEMINI_API_KEY: Optional[str] = None
-    LLM_TEMPERATURE: float = 0.7
+    LLM_TEMPERATURE: float = 0.5
     LLM_MAX_TOKENS: int = 2048
 
     # RAG Configuration
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     VECTOR_DIMENSION: int = 768
     CHUNK_SIZE: int = 1024
     CHUNK_OVERLAP: int = 256
-    SIMILARITY_THRESHOLD: float = 0.5
+    SIMILARITY_THRESHOLD: float = 0.3
     TOP_K_RETRIEVAL: int = 5
 
     # Pinecone (if using)

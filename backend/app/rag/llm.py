@@ -19,23 +19,29 @@ def _read_env_key(key: str) -> str:
     return ""
 
 
-PROMPT_TEMPLATE = """Bạn là một trợ lý pháp lý thông minh chuyên về **pháp luật Việt Nam**.
+REWRITE_PROMPT = """Hãy viết lại câu hỏi sau thành một truy vấn pháp lý ngắn gọn, dùng thuật ngữ pháp luật Việt Nam chính thức để tìm kiếm trong cơ sở dữ liệu văn bản pháp luật.
 
-Phạm vi hỗ trợ: Trả lời các câu hỏi thuộc mọi lĩnh vực pháp luật Việt Nam, bao gồm nhưng không giới hạn:
-hình sự, dân sự, đất đai, lao động, doanh nghiệp, hành chính, hôn nhân gia đình, tố tụng, v.v.
-Nếu câu hỏi hoàn toàn không liên quan đến pháp luật, hãy lịch sự giải thích và đề nghị người dùng đặt câu hỏi pháp lý.
+Yêu cầu:
+- Chỉ trả về đúng 1 câu truy vấn, không giải thích
+- Dùng thuật ngữ pháp lý chính thức (tên tội danh, tên luật, điều khoản...)
+- Giữ nguyên chủ đề pháp lý của câu hỏi gốc
+
+Câu hỏi gốc: {question}
+
+Truy vấn pháp lý:"""
+
+PROMPT_TEMPLATE = """Bạn là một trợ lý pháp lý chuyên về **pháp luật Việt Nam**.
 
 VĂN BẢN PHÁP LUẬT LIÊN QUAN TÌM ĐƯỢC:
 {context}
 
 CÂU HỎI: {question}
 
-HƯỚNG DẪN TRẢ LỜI:
-- Nếu có văn bản pháp luật liên quan ở trên, hãy ưu tiên trả lời dựa trên các văn bản đó, trích dẫn tên văn bản và số điều cụ thể nếu có.
-- Nếu văn bản tìm được không liên quan hoặc không đủ, hãy trả lời dựa trên kiến thức tổng quát về pháp luật Việt Nam và ghi chú rõ: "(Dựa trên kiến thức tổng quát, không có văn bản cụ thể trong cơ sở dữ liệu)".
-- Trả lời chi tiết, có cấu trúc rõ ràng với các mục, tiêu đề in đậm.
+NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
+- Nếu có văn bản pháp luật ở trên, ưu tiên trả lời dựa trên các văn bản đó và trích dẫn rõ nguồn.
+- Nếu văn bản tìm được không đủ hoặc không có, hãy trả lời dựa trên kiến thức pháp luật Việt Nam của bạn và ghi rõ "(dựa trên kiến thức pháp luật chung)".
+- Trả lời có cấu trúc rõ ràng, dùng tiêu đề in đậm và danh sách khi cần.
 - Chỉ dùng Markdown, không dùng thẻ HTML.
-- Giải thích các thuật ngữ pháp lý nếu cần thiết.
 
 TRẢ LỜI:"""
 
@@ -57,7 +63,20 @@ class GeminiLLM:
                 max_output_tokens=settings.LLM_MAX_TOKENS,
             ),
         )
+        if not response.text:
+            return "Không thể tạo câu trả lời cho câu hỏi này. Vui lòng thử diễn đạt lại câu hỏi."
         return response.text
+
+    def rewrite_query(self, query: str) -> str:
+        prompt = REWRITE_PROMPT.format(question=query)
+        client = genai.Client(api_key=_read_env_key("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model=_read_env_key("LLM_MODEL") or settings.LLM_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=128),
+        )
+        rewritten = (response.text or "").strip()
+        return rewritten if rewritten else query
 
     def generate_with_context(self, query: str, context: str) -> str:
         prompt = PROMPT_TEMPLATE.format(context=context, question=query)
@@ -72,6 +91,9 @@ class LLMManager:
         if settings.LLM_PROVIDER == "gemini":
             return GeminiLLM()
         raise ValueError(f"LLM provider không hỗ trợ: {settings.LLM_PROVIDER}")
+
+    def rewrite_query(self, query: str) -> str:
+        return self.llm.rewrite_query(query)
 
     def generate_answer(self, query: str, context: str) -> str:
         return self.llm.generate_with_context(query, context)
