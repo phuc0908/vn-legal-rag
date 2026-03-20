@@ -34,12 +34,12 @@ class ChromaVectorStore(BaseVectorStore):
             persist_directory="./chroma_db"
         )
 
-    def add_documents(self, documents: List[str], metadatas: List[Dict]):
+    def add_documents(self, documents: List[str], metadatas: List[Dict], ids: List[str] = None):
         """Add documents to vector store"""
-        self.vectorstore.add_texts(
-            texts=documents,
-            metadatas=metadatas
-        )
+        kwargs = {"texts": documents, "metadatas": metadatas}
+        if ids:
+            kwargs["ids"] = ids
+        self.vectorstore.add_texts(**kwargs)
         self.vectorstore.persist()
 
     def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
@@ -110,6 +110,16 @@ class RAGSystem:
             content = doc.get("content", "")
             metadata = doc.get("metadata", {})
             self.add_document(content, metadata)
+
+    def add_documents_direct(self, rows: List[Dict]):
+        """Add pre-chunked rows directly, no text splitting.
+
+        Each row: {"id": str, "content": str, "metadata": dict}
+        """
+        texts = [r["content"] for r in rows]
+        metadatas = [r.get("metadata", {}) for r in rows]
+        ids = [r["id"] for r in rows]
+        self.vector_store.add_documents(texts, metadatas, ids=ids)
 
 
 # Global RAG instance

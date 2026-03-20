@@ -36,8 +36,8 @@ class RAGPipeline:
         # Convert retrieved documents to SourceDocument objects
         sources = [
             SourceDocument(
-                title=doc.get("metadata", {}).get("article_title") or doc.get("metadata", {}).get("doc_name", "Unknown"),
-                content=doc["content"][:500],  # First 500 chars
+                title=self._source_title(doc.get("metadata", {})),
+                content=doc["content"][:500],
                 relevance_score=float(doc["score"]),
                 metadata=doc.get("metadata", {}),
                 url=doc.get("metadata", {}).get("url")
@@ -55,11 +55,19 @@ class RAGPipeline:
             model_used=self.llm_manager.llm.__class__.__name__ if self.llm_manager else None
         )
 
+    def _source_title(self, metadata: dict) -> str:
+        """Tạo tiêu đề nguồn từ metadata."""
+        id_vb = metadata.get("id_vb")
+        if id_vb:
+            return f"Văn bản #{id_vb}"
+        # Fallback cho dữ liệu cũ (ingest từ docx)
+        return metadata.get("article_title") or metadata.get("doc_name") or "Unknown"
+
     def _format_context(self, documents: List[dict]) -> str:
         """Format retrieved documents as context string"""
         context_parts = []
         for i, doc in enumerate(documents, 1):
-            source = doc.get("metadata", {}).get("title", f"Source {i}")
+            source = self._source_title(doc.get("metadata", {}))
             content = doc["content"]
             context_parts.append(f"[{source}]\n{content}")
         return "\n\n---\n\n".join(context_parts)
