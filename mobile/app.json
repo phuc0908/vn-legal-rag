@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Trợ lý Pháp lý VN",
+    "slug": "vn-legal-rag-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#c0392b"
+      }
+    }
+  }
+}
