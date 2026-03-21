@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str = "legal-docs"
 
     # Embeddings
-    EMBEDDING_MODEL: str = "hiieu/halong_embedding"
+    EMBEDDING_MODEL: str = "AITeamVN/Vietnamese_Embedding"
 
     # Database
     DATABASE_URL: Optional[str] = None
