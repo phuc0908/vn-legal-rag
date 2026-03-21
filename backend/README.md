@@ -8,7 +8,7 @@ FastAPI backend cho hệ thống hỏi đáp pháp luật Việt Nam sử dụng
 |-----------|---------|
 | Framework | FastAPI |
 | LLM | Google Gemini (`gemini-3-flash-preview`) |
-| Embedding | `hiieu/halong_embedding` (Sentence Transformers) |
+| Embedding | `AITeamVN/Vietnamese_Embedding` (Sentence Transformers) |
 | Vector Store | ChromaDB |
 | Database | MySQL (PyMySQL) |
 | Auth | JWT (python-jose + bcrypt) |
@@ -47,7 +47,8 @@ backend/
 │
 └── scripts/
     ├── setup_db.py             # Tạo bảng users/conversations/messages
-    ├── ingest_from_db.py       # Index vb_chimuc → ChromaDB (dùng script này)
+    ├── ingest_from_pddieu.py   # Index pddieu → ChromaDB (script chính)
+    ├── ingest_from_db.py       # Index vb_chimuc → ChromaDB (legacy)
     ├── ingest_legal_docx.py    # Index từ file .docx (legacy)
     ├── migrate.py
     └── test_query.py
@@ -90,24 +91,54 @@ TOP_K_RETRIEVAL=5
 # 1. Tạo bảng users, conversations, messages
 python scripts/setup_db.py
 
-# 2. Index toàn bộ vb_chimuc vào ChromaDB
-#    --reset: xóa ChromaDB cũ trước khi ingest
-python scripts/ingest_from_db.py --reset
+# 2. Preview dữ liệu trước khi ingest (tuỳ chọn)
+python scripts/ingest_from_pddieu.py --preview-only
 
-# 3. Chạy server
+# 3. Index toàn bộ pddieu vào ChromaDB
+#    --reset: xóa ChromaDB cũ trước khi ingest
+python scripts/ingest_from_pddieu.py --reset
+
+# 4. Chạy server
 python main.py
 ```
 
 > Server chạy tại http://localhost:8000
 > Swagger UI: http://localhost:8000/docs
 
-## Re-index (khi dữ liệu DB thay đổi)
+## Nguồn dữ liệu vector
 
-```bash
-python scripts/ingest_from_db.py --reset
+Script `ingest_from_pddieu.py` đọc bảng `pddieu` và JOIN sang các bảng liên quan:
+
+| Bảng | Quan hệ | Dữ liệu lấy |
+|------|---------|-------------|
+| `pddieu` | Bảng chính | Nội dung điều luật |
+| `pdchude` | `pddieu.chude_id` | Tên chủ đề (`chu_de_id` dùng làm filter) |
+| `pddemuc` | `pddieu.demuc_id` | Tên đề mục |
+| `pdchuong` | `pddieu.chuong_id` | Tên chương |
+| `pdtable` | `pddieu.mapc` | Bảng dữ liệu đính kèm |
+
+Mỗi row `pddieu` = 1 vector trong ChromaDB. Metadata vector gồm: `chu_de_id`, `chu_de`, `de_muc`, `chuong_ten`, `dieu_mapc`, `vbqppl`.
+
+### Lọc theo chủ đề
+
+Khi người dùng chọn chủ đề trong giao diện, query sẽ filter ChromaDB:
+```python
+filter_where = {"chu_de_id": "3"}  # chỉ tìm trong chủ đề id=3
 ```
 
-Script đọc bảng `vb_chimuc` theo batch 500 rows, mỗi row = 1 vector trong ChromaDB.
+### Tuỳ chọn CLI
+
+```bash
+python scripts/ingest_from_pddieu.py --preview-only        # Xem trước, không ingest
+python scripts/ingest_from_pddieu.py --reset               # Xóa ChromaDB và ingest lại
+python scripts/ingest_from_pddieu.py --chude-id 3          # Chỉ ingest chủ đề id=3
+```
+
+## Re-index
+
+```bash
+python scripts/ingest_from_pddieu.py --reset
+```
 
 ## API Endpoints
 
@@ -121,7 +152,7 @@ Script đọc bảng `vb_chimuc` theo batch 500 rows, mỗi row = 1 vector trong
 ### RAG
 | Method | Endpoint | Mô tả | Auth |
 |--------|----------|-------|------|
-| POST | `/api/query` | Hỏi đáp pháp luật | Có |
+| POST | `/api/query` | Hỏi đáp pháp luật (hỗ trợ `chu_de_id` filter) | Có |
 | GET | `/api/health` | Kiểm tra trạng thái hệ thống | Không |
 
 ### Conversations
@@ -132,7 +163,7 @@ Script đọc bảng `vb_chimuc` theo batch 500 rows, mỗi row = 1 vector trong
 | GET | `/api/conversations/{id}` | Chi tiết + messages | Có |
 | DELETE | `/api/conversations/{id}` | Xóa hội thoại | Có |
 
-### Pháp điển
+### Pháp điển (không cần auth)
 | Method | Endpoint | Mô tả |
 |--------|----------|-------|
 | GET | `/api/law/stats` | Thống kê số lượng điều/chương |
@@ -143,11 +174,11 @@ Script đọc bảng `vb_chimuc` theo batch 500 rows, mỗi row = 1 vector trong
 | GET | `/api/law/dieu/{mapc}` | Nội dung đầy đủ một điều |
 | GET | `/api/law/search?q=` | Tìm kiếm điều theo từ khóa |
 
-## Ví dụ query
+## Ví dụ query với filter chủ đề
 
 ```bash
 curl -X POST http://localhost:8000/api/query \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"query": "Thủ tục ly hôn theo luật hôn nhân gia đình?", "top_k": 5}'
+  -d '{"query": "Thủ tục ly hôn?", "top_k": 5, "chu_de_id": "3"}'
 ```

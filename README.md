@@ -7,23 +7,26 @@
 ```
 vn-legal-rag/
 ├── backend/     # FastAPI + RAG pipeline
-└── frontend/    # React + Vite
+├── frontend/    # React + Vite (web)
+└── mobile/      # React Native + Expo (iOS/Android)
 ```
 
 | Thành phần | Công nghệ |
 |-----------|-----------|
 | Backend | FastAPI, LangChain, ChromaDB, Google Gemini |
 | Frontend | React 18, Vite, Zustand, Axios |
+| Mobile | React Native 0.81, Expo SDK 54, React Navigation |
 | Database | MySQL (pháp điển + văn bản pháp luật) |
-| Embedding | `hiieu/halong_embedding` (Sentence Transformers) |
+| Embedding | `AITeamVN/Vietnamese_Embedding` (Sentence Transformers) |
 | Vector Store | ChromaDB |
 
 ## Luồng hoạt động
 
 ```
 Câu hỏi người dùng
-    → Embedding câu hỏi
-    → Tìm văn bản liên quan trong ChromaDB (nguồn: vb_chimuc)
+    → (Tuỳ chọn) Chọn chủ đề để lọc vector theo chu_de_id
+    → Embedding câu hỏi bằng AITeamVN/Vietnamese_Embedding
+    → Tìm văn bản liên quan trong ChromaDB (nguồn: bảng pddieu)
     → Ghép context → Gemini sinh câu trả lời
     → Trả về kết quả có trích dẫn nguồn
 ```
@@ -46,16 +49,25 @@ venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 cp .env.example .env           # Điền GEMINI_API_KEY và thông tin DB
 python scripts/setup_db.py     # Tạo bảng users, conversations, messages
-python scripts/ingest_from_db.py --reset  # Index vb_chimuc → ChromaDB
+python scripts/ingest_from_pddieu.py --reset  # Index pddieu → ChromaDB
 python main.py
 ```
 
-### 2. Frontend
+### 2. Frontend (Web)
 
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+### 3. Mobile (Expo Go)
+
+```bash
+cd mobile
+npm install
+# Sửa IP backend trong src/services/api.ts
+npx expo start
 ```
 
 | Service | URL |
@@ -68,4 +80,4 @@ npm run dev
 
 - [Backend README](backend/README.md)
 - [Frontend README](frontend/README.md)
-- [Cấu trúc Database](backend/DATABASE.md)
+- [Mobile README](mobile/README.md)

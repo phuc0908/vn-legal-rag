@@ -20,7 +20,7 @@ frontend/src/
 │   ├── Sidebar.jsx         # Danh sách hội thoại, user info, logout
 │   ├── ChatWindow.jsx      # Khu vực hiển thị messages
 │   ├── MessageItem.jsx     # Render từng message (markdown + sources)
-│   └── InputArea.jsx       # Ô nhập câu hỏi
+│   └── InputArea.jsx       # Ô nhập câu hỏi + dropdown chọn chủ đề
 ├── pages/
 │   └── ChatPage.jsx        # Trang chat chính
 ├── services/
@@ -62,16 +62,18 @@ Backend proxy qua Vite dev server (`/api` → `http://localhost:8000/api`).
 | `POST /api/auth/login` | Đăng nhập |
 | `POST /api/auth/register` | Đăng ký |
 | `GET /api/auth/me` | Thông tin user |
-| `POST /api/query` | Gửi câu hỏi pháp luật |
+| `POST /api/query` | Gửi câu hỏi (hỗ trợ `chu_de_id` filter) |
 | `GET /api/conversations` | Lấy danh sách hội thoại |
 | `POST /api/conversations` | Tạo hội thoại mới |
 | `DELETE /api/conversations/{id}` | Xóa hội thoại |
+| `GET /api/law/chude` | Danh sách chủ đề (dùng cho dropdown) |
 
 ## Tính năng
 
 - Đăng ký / đăng nhập tài khoản
 - Giao diện chat kiểu ChatGPT
 - Lịch sử hội thoại (sidebar)
+- **Chọn chủ đề** để lọc vector trước khi hỏi (45 chủ đề pháp điển)
 - Trích dẫn nguồn văn bản pháp luật
 - Render Markdown trong câu trả lời
 - Xóa hội thoại

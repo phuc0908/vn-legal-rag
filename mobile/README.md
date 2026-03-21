@@ -10,8 +10,10 @@
 |-----|-----------|
 | 🏠 Trang chủ | Tìm kiếm nhanh, danh mục lĩnh vực pháp luật, câu hỏi thường gặp |
 | 🔍 Tra cứu | Tìm kiếm full-text điều luật theo từ khóa |
-| 🤖 Tư vấn AI | Chat với AI, chọn chủ đề để lọc vector, lưu lịch sử hội thoại |
+| 🤖 Tư vấn AI | Chat với AI, chọn chủ đề để lọc vector, lưu lịch sử hội thoại **(yêu cầu đăng nhập)** |
 | 📚 Pháp điển | Duyệt phân cấp: Chủ đề → Đề mục → Chương → Điều |
+
+> **Lưu ý:** Trang chủ, Tra cứu, Pháp điển có thể dùng không cần đăng nhập. Chỉ tab Tư vấn AI yêu cầu tài khoản.
 
 ---
 
@@ -20,6 +22,7 @@
 ```
 mobile/
 ├── App.tsx                        # Entry point
+├── index.js                       # registerRootComponent
 ├── app.json                       # Expo config
 ├── babel.config.js
 ├── tsconfig.json
@@ -28,20 +31,20 @@ mobile/
     ├── theme/
     │   └── colors.ts              # Bảng màu toàn app
     ├── types/
-    │   └── index.ts               # TypeScript interfaces
+    │   └── index.ts               # TypeScript interfaces & navigation types
     ├── services/
     │   └── api.ts                 # Axios client — cấu hình IP backend tại đây
     ├── store/
-    │   ├── authStore.ts           # Zustand: trạng thái đăng nhập
+    │   ├── authStore.ts           # Zustand: trạng thái đăng nhập (persist AsyncStorage)
     │   └── chatStore.ts           # Zustand: danh sách hội thoại
     ├── navigation/
-    │   └── AppNavigator.tsx       # Stack + Bottom Tabs navigator
+    │   └── AppNavigator.tsx       # Root Stack + Bottom Tabs navigator
     ├── screens/
-    │   ├── LoginScreen.tsx
-    │   ├── RegisterScreen.tsx
+    │   ├── LoginScreen.tsx        # Modal đăng nhập
+    │   ├── RegisterScreen.tsx     # Modal đăng ký
     │   ├── HomeScreen.tsx
     │   ├── SearchScreen.tsx
-    │   ├── ChatScreen.tsx
+    │   ├── ChatScreen.tsx         # Yêu cầu auth, hiện prompt đăng nhập nếu chưa
     │   ├── LawBrowserScreen.tsx
     │   └── DieuDetailScreen.tsx
     └── components/
@@ -56,7 +59,7 @@ mobile/
 
 - Node.js >= 18
 - npm >= 9
-- Expo Go (cài trên điện thoại)
+- Expo Go SDK 54 (cài trên điện thoại)
 - Backend VN Legal RAG đang chạy (cùng mạng WiFi)
 
 ---
@@ -118,7 +121,7 @@ npx expo start
 
 ### Bước 4 — Kết nối Expo Go
 
-1. Cài **Expo Go** trên điện thoại (Android / iOS)
+1. Cài **Expo Go** (SDK 54) trên điện thoại (Android / iOS)
 2. Điện thoại và máy tính **phải cùng mạng WiFi**
 3. Quét QR code hiển thị trong terminal
 
@@ -126,16 +129,18 @@ npx expo start
 
 ## Tech Stack
 
-| Thư viện | Mục đích |
-|----------|----------|
-| Expo ~52 | Build tool & runtime |
-| React Native 0.76 | UI framework |
-| React Navigation 6 | Stack + Bottom Tab navigation |
-| Zustand 4 | State management |
-| AsyncStorage | Lưu trữ auth token & lịch sử (thay localStorage) |
-| Axios | HTTP client |
-| react-native-markdown-display | Render câu trả lời Markdown từ AI |
-| react-native-reanimated | Animation |
+| Thư viện | Phiên bản | Mục đích |
+|----------|-----------|----------|
+| Expo | ~54.0.0 | Build tool & runtime |
+| React Native | 0.81.5 | UI framework |
+| React | 19.1.0 | Core |
+| React Navigation | 7.x | Stack + Bottom Tab navigation |
+| react-native-reanimated | ~4.1.1 | Animation |
+| react-native-worklets | ^0.8.1 | Worklets runtime (dep của reanimated v4) |
+| Zustand | ^4.5.0 | State management |
+| AsyncStorage | ^2.1.0 | Lưu trữ auth token & lịch sử |
+| Axios | ^1.7.0 | HTTP client |
+| react-native-markdown-display | ^7.0.2 | Render câu trả lời Markdown từ AI |
 
 ---
 
@@ -147,4 +152,5 @@ npx expo start
 | `Port 8081 in use` | Port bị chiếm | Nhấn **Y** để dùng port khác |
 | QR không scan được | Khác mạng WiFi | Dùng `npx expo start --tunnel` |
 | `Cannot find module` | Chưa cài package | Chạy `npm install` |
+| `SDK mismatch` | Expo Go không đúng version | Cài Expo Go SDK 54 từ App Store / Play Store |
 | TS errors trong IDE | tsconfig chưa đúng | `Ctrl+Shift+P` → Restart TS Server |
