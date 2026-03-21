@@ -71,12 +71,16 @@ export const deleteConversation = async (conversationId) => {
 
 // ── Chat API ───────────────────────────────────────────────────────────────────
 
-export const sendMessage = async (message, conversationId) => {
+export const sendMessage = async (message, conversationId, chuDeId = null) => {
   try {
-    const response = await apiClient.post('/query', {
+    const body = {
       query: message,
       conversation_id: conversationId ? String(conversationId) : undefined,
-    })
+    }
+    if (chuDeId) {
+      body.chu_de_id = String(chuDeId)
+    }
+    const response = await apiClient.post('/query', body)
     return response.data
   } catch (error) {
     console.error('API Error:', error)

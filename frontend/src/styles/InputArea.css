@@ -1,7 +1,85 @@
 .input-area {
-  padding: 14px 20px 16px;
+  padding: 10px 20px 16px;
   background: #fff;
   border-top: 1px solid #e8eaf0;
+}
+
+/* ── Topic selector ────────────────────────────────────────── */
+
+.topic-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 860px;
+  margin: 0 auto 8px;
+}
+
+.topic-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.topic-select {
+  flex: 1;
+  padding: 5px 10px;
+  border: 1px solid #d8dae8;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fafafa;
+  color: #1a1a2e;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  min-width: 0;
+}
+
+.topic-select:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.08);
+}
+
+.topic-select--active {
+  border-color: #c0392b;
+  background: #fff5f5;
+  color: #c0392b;
+  font-weight: 500;
+}
+
+.topic-select:disabled {
+  background: #f3f4f6;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+.topic-clear-btn {
+  width: 22px;
+  height: 22px;
+  background: #e8eaf0;
+  border: none;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+  padding: 0;
+}
+
+.topic-clear-btn:hover:not(:disabled) {
+  background: #c0392b;
+  color: #fff;
+}
+
+.topic-clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .input-container {
