@@ -8,10 +8,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { login, getMe } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
-import { AuthStackParamList } from '../types'
+import { RootStackParamList } from '../types'
 
 type Props = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>
 }
 
 export default function LoginScreen({ navigation }: Props) {
@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }: Props) {
       } catch {
         // token vẫn hợp lệ dù không lấy được profile
       }
-      // AppNavigator tự chuyển sang Main khi isAuthenticated = true
+      navigation.goBack()
     } catch (err: any) {
       setError(
         err.response?.data?.detail ||
@@ -55,6 +55,9 @@ export default function LoginScreen({ navigation }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>← Quay lại</Text>
+          </TouchableOpacity>
           {/* Logo */}
           <View style={styles.logoArea}>
             <Text style={styles.logoEmoji}>⚖️</Text>
@@ -183,4 +186,7 @@ const styles = StyleSheet.create({
   footerRow: { flexDirection: 'row', justifyContent: 'center' },
   footerText: { fontSize: 13, color: Colors.textMuted },
   footerLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+
+  backBtn: { marginBottom: 8 },
+  backText: { fontSize: 14, color: Colors.textMuted },
 })

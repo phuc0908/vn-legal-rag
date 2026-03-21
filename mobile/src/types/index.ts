@@ -110,11 +110,7 @@ export interface SearchResult {
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 export type RootStackParamList = {
-  Auth: undefined
   Main: undefined
-}
-
-export type AuthStackParamList = {
   Login: undefined
   Register: undefined
 }

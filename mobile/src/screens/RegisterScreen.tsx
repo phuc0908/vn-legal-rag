@@ -7,10 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { register } from '../services/api'
 import { Colors } from '../theme/colors'
-import { AuthStackParamList } from '../types'
+import { RootStackParamList } from '../types'
 
 type Props = {
-  navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'>
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Register'>
 }
 
 export default function RegisterScreen({ navigation }: Props) {
@@ -55,6 +55,9 @@ export default function RegisterScreen({ navigation }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>← Quay lại</Text>
+          </TouchableOpacity>
           <View style={styles.logoArea}>
             <Text style={styles.logoEmoji}>⚖️</Text>
             <Text style={styles.logoTitle}>Tạo tài khoản</Text>
@@ -214,4 +217,7 @@ const styles = StyleSheet.create({
   footerRow: { flexDirection: 'row', justifyContent: 'center' },
   footerText: { fontSize: 13, color: Colors.textMuted },
   footerLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+
+  backBtn: { marginBottom: 8 },
+  backText: { fontSize: 14, color: Colors.textMuted },
 })

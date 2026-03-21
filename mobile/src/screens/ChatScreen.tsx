@@ -4,15 +4,20 @@ import {
   Platform, TouchableOpacity, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { sendMessage } from '../services/api'
 import { useChatStore } from '../store/chatStore'
+import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
 import MessageItem from '../components/MessageItem'
 import InputArea from '../components/InputArea'
 import ConversationDrawer from '../components/ConversationDrawer'
-import { Message } from '../types'
+import { Message, RootStackParamList } from '../types'
 
 export default function ChatScreen() {
+  const { isAuthenticated } = useAuthStore()
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
   const {
     conversations, currentConversationId,
     fetchConversations, createConversation, deleteConversation,
@@ -27,14 +32,14 @@ export default function ChatScreen() {
   const currentConversation = conversations.find((c) => c.id === currentConversationId) || null
 
   useEffect(() => {
-    fetchConversations()
-  }, [])
+    if (isAuthenticated) fetchConversations()
+  }, [isAuthenticated])
 
   useEffect(() => {
-    if (conversations.length === 0 && !isChatLoading) {
+    if (isAuthenticated && conversations.length === 0 && !isChatLoading) {
       createConversation()
     }
-  }, [conversations.length, isChatLoading])
+  }, [isAuthenticated, conversations.length, isChatLoading])
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -72,6 +77,26 @@ export default function ChatScreen() {
   }
 
   const messages = currentConversation?.messages || []
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.authGate}>
+          <Text style={styles.authEmoji}>⚖️</Text>
+          <Text style={styles.authTitle}>Đăng nhập để Tư vấn AI</Text>
+          <Text style={styles.authDesc}>
+            Tính năng tư vấn pháp lý AI yêu cầu đăng nhập để lưu lịch sử trò chuyện.
+          </Text>
+          <TouchableOpacity style={styles.loginBtn} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.loginBtnText}>Đăng nhập</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.registerLink}>Chưa có tài khoản? Đăng ký</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -233,4 +258,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   typingText: { fontSize: 13, color: Colors.textMuted, fontStyle: 'italic' },
+
+  authGate: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  authEmoji: { fontSize: 56, marginBottom: 16 },
+  authTitle: { fontSize: 20, fontWeight: '800', color: Colors.dark, marginBottom: 10, textAlign: 'center' },
+  authDesc: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 28 },
+  loginBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    marginBottom: 14,
+    width: '100%',
+    alignItems: 'center',
+  },
+  loginBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  registerLink: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
 })

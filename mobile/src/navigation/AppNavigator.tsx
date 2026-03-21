@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator as createLawStack } from '@react-navigation/native-stack'
 import { Text, View } from 'react-native'
-import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
 
 // Screens
@@ -18,7 +17,6 @@ import DieuDetailScreen from '../screens/DieuDetailScreen'
 
 import type {
   RootStackParamList,
-  AuthStackParamList,
   MainTabParamList,
   LawStackParamList,
 } from '../types'
@@ -26,20 +24,8 @@ import type {
 // ── Stacks ────────────────────────────────────────────────────────────────────
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
-const AuthStack = createNativeStackNavigator<AuthStackParamList>()
 const Tab = createBottomTabNavigator<MainTabParamList>()
 const LawStack = createLawStack<LawStackParamList>()
-
-// ── Auth Navigator ─────────────────────────────────────────────────────────────
-
-function AuthNavigator() {
-  return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="Login" component={LoginScreen} />
-      <AuthStack.Screen name="Register" component={RegisterScreen} />
-    </AuthStack.Navigator>
-  )
-}
 
 // ── Law Stack Navigator ────────────────────────────────────────────────────────
 
@@ -146,16 +132,20 @@ function MainNavigator() {
 // ── Root Navigator ─────────────────────────────────────────────────────────────
 
 export default function AppNavigator() {
-  const { isAuthenticated } = useAuthStore()
-
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainNavigator} />
-        ) : (
-          <RootStack.Screen name="Auth" component={AuthNavigator} />
-        )}
+        <RootStack.Screen name="Main" component={MainNavigator} />
+        <RootStack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ presentation: 'modal' }}
+        />
+        <RootStack.Screen
+          name="Register"
+          component={RegisterScreen}
+          options={{ presentation: 'modal' }}
+        />
       </RootStack.Navigator>
     </NavigationContainer>
   )
