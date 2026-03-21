@@ -14,7 +14,7 @@ PDChuDe (Chủ đề)
                     └── PDMucLienQuan (Điều liên quan)
 
 VBPL (Văn bản pháp luật)
-  └── VB_ChiMuc (Chỉ mục văn bản — nguồn dữ liệu RAG)
+  └── VB_ChiMuc (Chỉ mục văn bản)
 
 Users
   └── Conversations
@@ -115,7 +115,7 @@ Users
 
 ---
 
-## Bảng `vb_chimuc` — Chỉ mục văn bản *(nguồn dữ liệu RAG)*
+## Bảng `vb_chimuc` — Chỉ mục văn bản
 
 | Cột           | Kiểu | Ghi chú                              |
 |---------------|------|--------------------------------------|

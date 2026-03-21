@@ -20,7 +20,7 @@ class RAGPipeline:
 
         print(f"\n{sep}")
         print(f"[QUERY] {request.query}")
-        print(f"[QUERY] conversation_id={request.conversation_id} | top_k={request.top_k}")
+        print(f"[QUERY] conversation_id={request.conversation_id} | top_k={request.top_k} | chu_de_id={request.chu_de_id}")
 
         # ── 1. Query rewriting ────────────────────────────────────
         search_query = request.query
@@ -32,8 +32,9 @@ class RAGPipeline:
 
         # ── 2. Retrieval ──────────────────────────────────────────
         print(f"\n[RETRIEVAL] Đang tìm kiếm trong ChromaDB...")
+        filter_where = {"chu_de_id": str(request.chu_de_id)} if request.chu_de_id else None
         t0 = time.time()
-        retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k)
+        retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k, filter_where=filter_where)
         retrieval_time = time.time() - t0
         print(f"[RETRIEVAL] Hoàn tất sau {retrieval_time:.2f}s — tìm được {len(retrieved_docs)} đoạn văn bản")
 

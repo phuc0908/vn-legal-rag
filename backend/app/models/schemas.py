@@ -8,6 +8,7 @@ class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, description="User query")
     conversation_id: Optional[str] = Field(None, description="Conversation ID for context")
     top_k: int = Field(5, ge=1, le=20, description="Number of sources to retrieve")
+    chu_de_id: Optional[str] = Field(None, description="Filter vectors by topic ID (pdchude.id)")
 
 
 class SourceDocument(BaseModel):

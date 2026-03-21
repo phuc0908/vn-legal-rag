@@ -42,10 +42,14 @@ class ChromaVectorStore(BaseVectorStore):
         self.vectorstore.add_texts(**kwargs)
         self.vectorstore.persist()
 
-    def similarity_search(self, query: str, k: int = 5) -> List[Dict]:
-        """Search for similar documents"""
-        print(f"  [CHROMA] similarity_search k={k} | query='{query[:80]}...'")
-        results = self.vectorstore.similarity_search_with_relevance_scores(query, k=k)
+    def similarity_search(self, query: str, k: int = 5, filter_where: dict = None) -> List[Dict]:
+        """Search for similar documents, optionally filtered by metadata."""
+        filter_info = f" | filter={filter_where}" if filter_where else ""
+        print(f"  [CHROMA] similarity_search k={k}{filter_info} | query='{query[:80]}...'")
+        kwargs = {"query": query, "k": k}
+        if filter_where:
+            kwargs["filter"] = filter_where
+        results = self.vectorstore.similarity_search_with_relevance_scores(**kwargs)
         print(f"  [CHROMA] Raw results: {len(results)} — scores: {[round(s, 4) for _, s in results]}")
         return [
             {
@@ -97,10 +101,11 @@ class RAGSystem:
 
         self.vector_store.add_documents(chunks, metadatas)
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[Dict]:
-        """Retrieve relevant documents"""
-        results = self.vector_store.similarity_search(query, k=top_k)
-        print(f"  [RETRIEVAL] Lấy top {len(results)} docs (không lọc ngưỡng)")
+    def retrieve(self, query: str, top_k: int = 5, filter_where: dict = None) -> List[Dict]:
+        """Retrieve relevant documents, optionally filtered by metadata."""
+        results = self.vector_store.similarity_search(query, k=top_k, filter_where=filter_where)
+        filter_info = f" (filter: {filter_where})" if filter_where else ""
+        print(f"  [RETRIEVAL] Lấy top {len(results)} docs{filter_info}")
         return results
 
     def add_documents_batch(self, documents: List[Dict]):
