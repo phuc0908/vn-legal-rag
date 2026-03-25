@@ -72,38 +72,6 @@ def _strip_html(html: str) -> str:
     return re.sub(r'\s+', ' ', text).strip()
 
 
-# ── Load bảng HTML từ pdtable ─────────────────────────────────────────────────
-
-def load_tables_map(conn, chude_id: str = None) -> dict:
-    """
-    Trả về dict {dieu_mapc: [text1, text2, ...]} với nội dung bảng đã strip HTML.
-    Nếu chude_id được cung cấp, chỉ load bảng của chủ đề đó.
-    """
-    log("Đang tải dữ liệu bảng từ pdtable...")
-    if chude_id:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT t.dieu_id, t.html
-                FROM pdtable t
-                JOIN pddieu d ON t.dieu_id = d.mapc
-                WHERE d.chude_id = %s AND t.html IS NOT NULL AND t.html != ''
-            """, (chude_id,))
-            rows = cur.fetchall()
-    else:
-        with conn.cursor() as cur:
-            cur.execute("SELECT dieu_id, html FROM pdtable WHERE html IS NOT NULL AND html != ''")
-            rows = cur.fetchall()
-
-    tables_map = {}
-    for r in rows:
-        dieu_id = r['dieu_id']
-        text = _strip_html(r['html'])
-        if text:
-            tables_map.setdefault(dieu_id, []).append(text)
-
-    log(f"  Đã tải {len(rows)} bảng cho {len(tables_map)} điều")
-    return tables_map
-
 
 # ── Fetch pddieu với JOIN ─────────────────────────────────────────────────────
 
@@ -148,14 +116,9 @@ def fetch_pddieu_rows(conn, chude_id: str = None) -> list:
 
 # ── Xây dựng nội dung text cho mỗi vector ────────────────────────────────────
 
-def build_content(row: dict, tables: list) -> str:
-    """
-    Ghép nội dung từ pddieu + pdtable thành chuỗi text cho embedding.
-    Thay thế các ID bằng tên thực tế (đã join từ DB).
-    """
+def build_content(row: dict) -> str:
     parts = []
 
-    # Header phân loại (thay ID bằng tên thực)
     header_parts = []
     if row.get('chu_de'):
         header_parts.append(f"Chủ đề: {row['chu_de']}")
@@ -166,21 +129,13 @@ def build_content(row: dict, tables: list) -> str:
     if header_parts:
         parts.append(" | ".join(header_parts))
 
-    # Tên điều
     if row.get('dieu_ten'):
         parts.append(str(row['dieu_ten']))
 
-    # Nội dung điều (strip HTML)
     noidung = _strip_html(row.get('noidung', ''))
     if noidung:
         parts.append(noidung)
 
-    # Nội dung các bảng đính kèm
-    for i, table_text in enumerate(tables, 1):
-        if table_text.strip():
-            parts.append(f"[Bảng {i}]: {table_text}")
-
-    # Văn bản quy phạm pháp luật
     if row.get('vbqppl'):
         parts.append(f"Văn bản: {row['vbqppl']}")
 
@@ -196,28 +151,19 @@ def build_preview(conn, chude_id: str = None):
     """
     log("Đang tạo preview dữ liệu...")
     rows = fetch_pddieu_rows(conn, chude_id)
-    tables_map = load_tables_map(conn, chude_id)
 
     total = len(rows)
 
-    # Thống kê theo chủ đề
     chude_stats = {}
     for r in rows:
         cd = r['chu_de']
         chude_stats[cd] = chude_stats.get(cd, 0) + 1
 
-    # Thống kê độ dài content
-    content_lens = []
-    for r in rows:
-        tables = tables_map.get(r['mapc'], [])
-        content = build_content(dict(r), tables)
-        content_lens.append(len(content))
+    content_lens = [len(build_content(dict(r))) for r in rows]
 
-    # Rows mẫu (giới hạn PREVIEW_LIMIT)
     sample_rows = []
     for r in rows[:PREVIEW_LIMIT]:
-        tables = tables_map.get(r['mapc'], [])
-        content = build_content(dict(r), tables)
+        content = build_content(dict(r))
         sample_rows.append({
             "mapc": r['mapc'],
             "dieu_ten": r['dieu_ten'],
@@ -226,7 +172,6 @@ def build_preview(conn, chude_id: str = None):
             "de_muc": r['de_muc'],
             "chuong_ten": r.get('chuong_ten') or '',
             "vbqppl": r.get('vbqppl') or '',
-            "so_bang": len(tables),
             "content_len": len(content),
             "content_preview": content[:600],
         })
@@ -234,7 +179,6 @@ def build_preview(conn, chude_id: str = None):
     preview = {
         "stats": {
             "total_vectors": total,
-            "total_bang_html": sum(len(v) for v in tables_map.values()),
             "theo_chu_de": chude_stats,
             "content_length": {
                 "min": min(content_lens) if content_lens else 0,
@@ -246,7 +190,6 @@ def build_preview(conn, chude_id: str = None):
     }
 
     log(f"  Tổng vectors (pddieu) : {total}")
-    log(f"  Tổng bảng HTML        : {preview['stats']['total_bang_html']}")
     log(f"  Theo chủ đề:")
     for cd, cnt in sorted(chude_stats.items(), key=lambda x: -x[1])[:10]:
         log(f"    {cd}: {cnt} điều")
@@ -258,7 +201,7 @@ def build_preview(conn, chude_id: str = None):
         f"max={preview['stats']['content_length']['max']} | "
         f"avg={preview['stats']['content_length']['avg']}"
     )
-    return preview, rows, tables_map
+    return preview, rows
 
 
 def save_preview(preview: dict):
@@ -269,7 +212,7 @@ def save_preview(preview: dict):
 
 # ── Ingest ─────────────────────────────────────────────────────────────────────
 
-def ingest(rows: list, tables_map: dict):
+def ingest(rows: list):
     from app.rag.retrieval import get_rag_system
 
     log("Khởi tạo RAG system (tải embedding model)...")
@@ -289,8 +232,7 @@ def ingest(rows: list, tables_map: dict):
 
         rows_to_add = []
         for r in batch:
-            tables = tables_map.get(r['mapc'], [])
-            content = build_content(dict(r), tables)
+            content = build_content(dict(r))
             if not content.strip():
                 continue
             rows_to_add.append({
@@ -358,7 +300,7 @@ def main():
         log("─" * 40)
         log("BƯỚC 1: Tải dữ liệu và tạo preview")
         log("─" * 40)
-        preview, rows, tables_map = build_preview(conn, chude_id)
+        preview, rows = build_preview(conn, chude_id)
         save_preview(preview)
 
         if preview_only:
@@ -375,7 +317,7 @@ def main():
             log("Hủy. File preview đã được lưu để tham khảo.")
             return
 
-        total = ingest(rows, tables_map)
+        total = ingest(rows)
 
     print("=" * 60)
     log(f"DONE — {total} vectors đã được index vào ChromaDB.")
