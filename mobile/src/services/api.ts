@@ -1,11 +1,11 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
-// ── Thay IP này bằng IP máy chủ backend của bạn ──────────────────────────────
-// Nếu chạy trên máy tính cùng mạng WiFi với điện thoại:
+
+// Máy tính cùng mạng WiFi với điện thoại:
 //   - Tìm IP bằng: ipconfig (Windows) hoặc ifconfig (Mac/Linux)
 //   - Ví dụ: http://192.168.1.5:8000/api
-// Nếu dùng Android Emulator: http://10.0.2.2:8000/api
+// Android Emulator: http://10.0.2.2:8000/api
 export const API_BASE_URL = 'http://192.168.2.65:8000/api'
 
 const apiClient = axios.create({

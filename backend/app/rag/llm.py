@@ -59,7 +59,6 @@ TRẢ LỜI:"""
 
 
 class GeminiLLM:
-    """Gemini LLM provider dùng Google Gen AI SDK"""
 
     def __init__(self):
         api_key = _read_env_key("GEMINI_API_KEY") or settings.GEMINI_API_KEY
@@ -69,27 +68,38 @@ class GeminiLLM:
         self._model = _read_env_key("LLM_MODEL") or settings.LLM_MODEL
 
     def generate(self, prompt: str) -> str:
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=settings.LLM_TEMPERATURE,
-                max_output_tokens=settings.LLM_MAX_TOKENS,
-            ),
-        )
-        if not response.text:
-            return "Không thể tạo câu trả lời cho câu hỏi này. Vui lòng thử diễn đạt lại câu hỏi."
-        return response.text
+        try:
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=settings.LLM_TEMPERATURE,
+                    max_output_tokens=settings.LLM_MAX_TOKENS,
+                ),
+            )
+            if not response.text:
+                return "Không thể tạo câu trả lời cho câu hỏi này. Vui lòng thử diễn đạt lại câu hỏi."
+            return response.text
+        except Exception as e:
+            err = str(e)
+            if "503" in err or "UNAVAILABLE" in err:
+                return "Hệ thống AI đang bận, vui lòng thử lại sau ít phút."
+            if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                return "Hệ thống đang xử lý nhiều yêu cầu, vui lòng thử lại sau."
+            raise
 
     def rewrite_query(self, query: str) -> str:
         prompt = REWRITE_PROMPT.format(question=query)
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=prompt,
-            config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=128),
-        )
-        rewritten = (response.text or "").strip()
-        return rewritten if rewritten else query
+        try:
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=prompt,
+                config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=128),
+            )
+            rewritten = (response.text or "").strip()
+            return rewritten if rewritten else query
+        except Exception:
+            return query  # fallback về query gốc nếu rewrite lỗi
 
     def generate_with_context(self, query: str, context: str) -> str:
         prompt = PROMPT_TEMPLATE.format(context=context, question=query)
@@ -120,7 +130,7 @@ llm_manager = None
 
 def reset_llm_manager():
     global llm_manager
-    _load_env_cache()  # Tải lại .env để lấy key mới nhất
+    _load_env_cache()
     llm_manager = None
 
 

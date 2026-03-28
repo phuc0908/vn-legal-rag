@@ -24,3 +24,5 @@ chroma_db/
 data/
 test_query/
 doc/
+web_batches/
+scripts/benchmark_*.json

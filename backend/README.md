@@ -7,8 +7,9 @@ FastAPI backend cho hệ thống hỏi đáp pháp luật Việt Nam sử dụng
 | Thành phần | Chi tiết |
 |-----------|---------|
 | Framework | FastAPI |
-| LLM | Google Gemini (`gemini-3-flash-preview`) |
+| LLM | Google Gemini (`gemini-2.0-flash`) |
 | Embedding | `AITeamVN/Vietnamese_Embedding` (Sentence Transformers) |
+| Reranker | `AITeamVN/Vietnamese_Reranker` (Cross Encoder) |
 | Vector Store | ChromaDB |
 | Database | MySQL (PyMySQL) |
 | Auth | JWT (python-jose + bcrypt) |
@@ -18,8 +19,9 @@ FastAPI backend cho hệ thống hỏi đáp pháp luật Việt Nam sử dụng
 
 ```
 backend/
-├── main.py                     # Entry point FastAPI
+├── main.py                     # Entry point FastAPI (có serve frontend dist/)
 ├── requirements.txt
+├── railway.toml                # Config deploy Railway
 ├── .env                        # Cấu hình (không commit)
 ├── chroma_db/                  # Dữ liệu vector (auto tạo khi ingest)
 │
@@ -28,8 +30,7 @@ backend/
 │   │   ├── routes.py           # POST /query, GET /health
 │   │   ├── auth_routes.py      # POST /auth/register, /auth/login, GET /auth/me
 │   │   ├── conversation_routes.py  # CRUD conversations & messages
-│   │   ├── law_routes.py       # Duyệt pháp điển (chủ đề, điều, tìm kiếm)
-│   │   └── dependencies.py     # get_current_user dependency
+│   │   └── law_routes.py       # Duyệt pháp điển (chủ đề, điều, tìm kiếm)
 │   ├── core/
 │   │   ├── config.py           # Settings (pydantic-settings)
 │   │   └── auth.py             # JWT, bcrypt utilities
@@ -39,7 +40,7 @@ backend/
 │   │   └── schemas.py          # Pydantic request/response schemas
 │   ├── rag/
 │   │   ├── pipeline.py         # RAGPipeline: retrieval + generation
-│   │   ├── retrieval.py        # ChromaVectorStore, RAGSystem
+│   │   ├── retrieval.py        # ChromaVectorStore, RAGSystem, Reranker
 │   │   └── llm.py              # GeminiLLM, LLMManager, PROMPT_TEMPLATE
 │   └── utils/
 │       ├── helpers.py
@@ -50,7 +51,8 @@ backend/
     ├── ingest_from_pddieu.py   # Index pddieu → ChromaDB (script chính)
     ├── ingest_from_db.py       # Index vb_chimuc → ChromaDB (legacy)
     ├── ingest_legal_docx.py    # Index từ file .docx (legacy)
-    ├── migrate.py
+    ├── export_corpus.py        # Export ChromaDB ra file JSON
+    ├── export_for_web.py       # Export dữ liệu cho web
     └── test_query.py
 ```
 
@@ -65,24 +67,22 @@ pip install -r requirements.txt
 
 ## Cấu hình `.env`
 
-```env
-# LLM
-GEMINI_API_KEY=your_key_here
-LLM_MODEL=gemini-3-flash-preview
+Tạo file `.env` từ mẫu:
 
-# Database
+```bash
+cp .env.example .env
+```
+
+Các biến bắt buộc:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
 DB_HOST=localhost
-DB_PORT=3307
+DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
 DB_NAME=law
-
-# Security
-SECRET_KEY=your_random_secret_key
-
-# RAG
-SIMILARITY_THRESHOLD=0.5
-TOP_K_RETRIEVAL=5
+SECRET_KEY=<chạy: python -c "import secrets; print(secrets.token_hex(32))">
 ```
 
 ## Khởi chạy lần đầu
@@ -95,7 +95,6 @@ python scripts/setup_db.py
 python scripts/ingest_from_pddieu.py --preview-only
 
 # 3. Index toàn bộ pddieu vào ChromaDB
-#    --reset: xóa ChromaDB cũ trước khi ingest
 python scripts/ingest_from_pddieu.py --reset
 
 # 4. Chạy server
@@ -104,6 +103,29 @@ python main.py
 
 > Server chạy tại http://localhost:8000
 > Swagger UI: http://localhost:8000/docs
+
+## Expose ra ngoài bằng ngrok
+
+Backend tích hợp serve frontend — chỉ cần 1 tunnel duy nhất:
+
+```bash
+# Terminal 1 — chạy backend (đã bao gồm frontend dist/)
+python main.py
+
+# Terminal 2 — expose ra internet
+ngrok http --domain=your-name.ngrok-free.app 8000
+```
+
+Người dùng truy cập `https://your-name.ngrok-free.app` sẽ thấy giao diện web.
+Trước đó cần build frontend: `cd ../frontend && npm run build`
+
+## Serve frontend từ backend
+
+`main.py` tự động serve thư mục `../frontend/dist/` nếu đã tồn tại:
+
+- `GET /` → `frontend/dist/index.html`
+- `GET /assets/*` → static assets
+- `GET /api/*` → API routes (ưu tiên)
 
 ## Nguồn dữ liệu vector
 
@@ -115,16 +137,8 @@ Script `ingest_from_pddieu.py` đọc bảng `pddieu` và JOIN sang các bảng 
 | `pdchude` | `pddieu.chude_id` | Tên chủ đề (`chu_de_id` dùng làm filter) |
 | `pddemuc` | `pddieu.demuc_id` | Tên đề mục |
 | `pdchuong` | `pddieu.chuong_id` | Tên chương |
-| `pdtable` | `pddieu.mapc` | Bảng dữ liệu đính kèm |
 
 Mỗi row `pddieu` = 1 vector trong ChromaDB. Metadata vector gồm: `chu_de_id`, `chu_de`, `de_muc`, `chuong_ten`, `dieu_mapc`, `vbqppl`.
-
-### Lọc theo chủ đề
-
-Khi người dùng chọn chủ đề trong giao diện, query sẽ filter ChromaDB:
-```python
-filter_where = {"chu_de_id": "3"}  # chỉ tìm trong chủ đề id=3
-```
 
 ### Tuỳ chọn CLI
 
@@ -132,12 +146,6 @@ filter_where = {"chu_de_id": "3"}  # chỉ tìm trong chủ đề id=3
 python scripts/ingest_from_pddieu.py --preview-only        # Xem trước, không ingest
 python scripts/ingest_from_pddieu.py --reset               # Xóa ChromaDB và ingest lại
 python scripts/ingest_from_pddieu.py --chude-id 3          # Chỉ ingest chủ đề id=3
-```
-
-## Re-index
-
-```bash
-python scripts/ingest_from_pddieu.py --reset
 ```
 
 ## API Endpoints
@@ -174,7 +182,7 @@ python scripts/ingest_from_pddieu.py --reset
 | GET | `/api/law/dieu/{mapc}` | Nội dung đầy đủ một điều |
 | GET | `/api/law/search?q=` | Tìm kiếm điều theo từ khóa |
 
-## Ví dụ query với filter chủ đề
+## Ví dụ query
 
 ```bash
 curl -X POST http://localhost:8000/api/query \

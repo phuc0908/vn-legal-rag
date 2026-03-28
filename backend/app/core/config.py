@@ -41,11 +41,18 @@ class Settings(BaseSettings):
     # Embeddings
     EMBEDDING_MODEL: str = "AITeamVN/Vietnamese_Embedding"
 
+    # Reranker
+    RERANKER_ENABLED: bool = True
+    RERANKER_MODEL: str = "AITeamVN/Vietnamese_Reranker"
+    RERANKER_TOP_K: int = 5
+    RETRIEVAL_CANDIDATE_MULTIPLIER: int = 3
+
     # Database
     DATABASE_URL: Optional[str] = None
 
-    # CORS
-    ALLOWED_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS — thêm ngrok URL vào đây khi dùng ngrok
+    # Ví dụ: ALLOWED_ORIGINS=["https://your-name.ngrok-free.app","http://localhost:3000"]
+    ALLOWED_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
 
     class Config:
         env_file = ".env"
