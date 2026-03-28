@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
+import os
 import time
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from sentence_transformers import CrossEncoder
 from app.core.config import settings
 
 
@@ -29,9 +31,10 @@ class ChromaVectorStore(BaseVectorStore):
         self.embeddings = HuggingFaceEmbeddings(
             model_name=settings.EMBEDDING_MODEL
         )
+        chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.vectorstore = Chroma(
             embedding_function=self.embeddings,
-            persist_directory="./chroma_db"
+            persist_directory=chroma_path
         )
 
     def add_documents(self, documents: List[str], metadatas: List[Dict], ids: List[str] = None):
@@ -70,11 +73,33 @@ class ChromaVectorStore(BaseVectorStore):
             return False
 
 
+class Reranker:
+    """Cross-encoder reranker to re-score retrieved candidates"""
+
+    def __init__(self, model_name: str):
+        print(f"[RERANKER] Đang tải model '{model_name}'...")
+        self.model = CrossEncoder(model_name)
+        print(f"[RERANKER] Sẵn sàng.")
+
+    def rerank(self, query: str, docs: List[Dict], top_k: int) -> List[Dict]:
+        if not docs:
+            return docs
+        pairs = [(query, doc["content"]) for doc in docs]
+        scores = self.model.predict(pairs)
+        for doc, score in zip(docs, scores):
+            doc["original_score"] = doc["score"]
+            doc["score"] = float(score)
+        reranked = sorted(docs, key=lambda x: x["score"], reverse=True)
+        print(f"  [RERANKER] Reranked {len(docs)} → top {top_k} | scores: {[round(d['score'], 4) for d in reranked[:top_k]]}")
+        return reranked[:top_k]
+
+
 class RAGSystem:
     """Retrieval Augmented Generation system"""
 
     def __init__(self):
         self.vector_store = self._init_vector_store()
+        self.reranker = Reranker(settings.RERANKER_MODEL) if settings.RERANKER_ENABLED else None
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
@@ -103,8 +128,11 @@ class RAGSystem:
 
     def retrieve(self, query: str, top_k: int = 5, filter_where: dict = None) -> List[Dict]:
         """Retrieve relevant documents, optionally filtered by metadata."""
-        results = self.vector_store.similarity_search(query, k=top_k, filter_where=filter_where)
         filter_info = f" (filter: {filter_where})" if filter_where else ""
+        candidate_k = top_k * settings.RETRIEVAL_CANDIDATE_MULTIPLIER if self.reranker else top_k
+        results = self.vector_store.similarity_search(query, k=candidate_k, filter_where=filter_where)
+        if self.reranker:
+            results = self.reranker.rerank(query, results, top_k=top_k)
         print(f"  [RETRIEVAL] Lấy top {len(results)} docs{filter_info}")
         return results
 
