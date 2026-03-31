@@ -6,14 +6,9 @@ Join với các bảng liên quan để lấy tên thay vì ID:
   - pdchude  (chude_id)  → chu_de    (tên chủ đề)
   - pddemuc  (demuc_id)  → de_muc    (tên đề mục)
   - pdchuong (chuong_id) → chuong_ten (tên chương)
-  - pdtable  (dieu_id)   → bảng HTML  (nội dung bảng đính kèm điều)
 
 Nội dung mỗi vector:
   [Header: Chủ đề | Đề mục | Chương]
-  <tên điều>
-  <noidung đã strip HTML>
-  [Bảng 1]: ...
-  Văn bản: <vbqppl>
 
 Metadata mỗi vector:
   - dieu_mapc   : mã pháp điển của điều (vd: "HNGD.1.1.1.1")
@@ -22,14 +17,14 @@ Metadata mỗi vector:
   - chu_de      : tên chủ đề (vd: "Hôn nhân và Gia đình")
   - de_muc      : tên đề mục
   - chuong_ten  : tên chương
-  - vbqppl      : tên văn bản quy phạm pháp luật
-  - vbqppl_link : link văn bản
+
 
 Usage:
     python scripts/ingest_from_pddieu.py                    # ingest toàn bộ
     python scripts/ingest_from_pddieu.py --reset            # xóa ChromaDB cũ rồi ingest
     python scripts/ingest_from_pddieu.py --preview-only     # chỉ tạo file preview JSON, không embed
     python scripts/ingest_from_pddieu.py --chude-id 5       # chỉ ingest chủ đề có id=5
+    python scripts/ingest_from_pddieu.py --export-json      # export dữ liệu ra JSON (để embed trên Colab)
 """
 
 import sys
@@ -45,6 +40,7 @@ from app.db.database import get_db
 BATCH_SIZE = 200
 PREVIEW_LIMIT = 20
 PREVIEW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pddieu_preview.json")
+EXPORT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pddieu_export.json")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -210,6 +206,32 @@ def save_preview(preview: dict):
     log(f"Preview JSON đã lưu: {PREVIEW_PATH}")
 
 
+def export_rows_to_json(rows: list, path: str = None):
+    """Export toàn bộ rows (đã build content + metadata) ra JSON để embed trên Colab."""
+    out_path = path or EXPORT_PATH
+    data = []
+    for r in rows:
+        content = build_content(dict(r))
+        if not content.strip():
+            continue
+        data.append({
+            "id": f"pddieu_{r['mapc']}",
+            "content": content,
+            "metadata": {
+                "dieu_mapc":   str(r['mapc']),
+                "dieu_ten":    str(r['dieu_ten'] or ''),
+                "chu_de_id":   str(r['chu_de_id']),
+                "chu_de":      str(r['chu_de'] or ''),
+                "de_muc":      str(r['de_muc'] or ''),
+                "chuong_ten":  str(r.get('chuong_ten') or ''),
+            },
+        })
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+    log(f"Đã export {len(data)} rows → {out_path} ({os.path.getsize(out_path) / 1024 / 1024:.1f} MB)")
+    log("Tiếp theo: upload file này lên Google Colab để embed với GPU.")
+
+
 # ── Ingest ─────────────────────────────────────────────────────────────────────
 
 def ingest(rows: list):
@@ -245,8 +267,6 @@ def ingest(rows: list):
                     "chu_de":      str(r['chu_de'] or ''),
                     "de_muc":      str(r['de_muc'] or ''),
                     "chuong_ten":  str(r.get('chuong_ten') or ''),
-                    "vbqppl":      str(r.get('vbqppl') or ''),
-                    "vbqppl_link": str(r.get('vbqppl_link') or ''),
                 },
             })
 
@@ -274,6 +294,7 @@ def ingest(rows: list):
 def main():
     do_reset = "--reset" in sys.argv
     preview_only = "--preview-only" in sys.argv
+    export_json = "--export-json" in sys.argv
 
     # Parse --chude-id <value>
     chude_id = None
@@ -305,6 +326,13 @@ def main():
 
         if preview_only:
             log("Chế độ --preview-only: dừng tại đây.")
+            return
+
+        if export_json:
+            log("─" * 40)
+            log("BƯỚC 2: Export JSON (để embed trên Colab)")
+            log("─" * 40)
+            export_rows_to_json(rows)
             return
 
         # Bước 2: embed

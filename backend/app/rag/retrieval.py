@@ -43,7 +43,6 @@ class ChromaVectorStore(BaseVectorStore):
         if ids:
             kwargs["ids"] = ids
         self.vectorstore.add_texts(**kwargs)
-        self.vectorstore.persist()
 
     def similarity_search(self, query: str, k: int = 5, filter_where: dict = None) -> List[Dict]:
         """Search for similar documents, optionally filtered by metadata."""

@@ -2,3 +2,5 @@ project_context.md
 GETTING_STARTED.md
 .claude/
 .vscode/
+notebooks/
+scripts/

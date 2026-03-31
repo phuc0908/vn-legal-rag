@@ -124,8 +124,6 @@ Users
 | `noi_dung`    | TEXT | Nội dung đoạn (chương hoặc điều)     |
 | `chi_muc_cha` | INT  | ID chương cha (null nếu là chương)   |
 
-Mỗi row trong `vb_chimuc` = 1 vector trong ChromaDB.
-Script ingest: `scripts/ingest_from_db.py`
 
 ---
 
