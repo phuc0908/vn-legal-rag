@@ -34,7 +34,7 @@ class RAGPipeline:
         print(f"\n[RETRIEVAL] Đang tìm kiếm trong ChromaDB...")
         filter_where = {"chu_de_id": str(request.chu_de_id)} if request.chu_de_id else None
         t0 = time.time()
-        retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k, filter_where=filter_where)
+        retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k, filter_where=filter_where, rerank_query=request.query)
         retrieval_time = time.time() - t0
         print(f"[RETRIEVAL] Hoàn tất sau {retrieval_time:.2f}s — tìm được {len(retrieved_docs)} đoạn văn bản")
 

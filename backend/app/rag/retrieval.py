@@ -126,13 +126,20 @@ class RAGSystem:
 
         self.vector_store.add_documents(chunks, metadatas)
 
-    def retrieve(self, query: str, top_k: int = 5, filter_where: dict = None) -> List[Dict]:
-        """Retrieve relevant documents, optionally filtered by metadata."""
+    def retrieve(self, query: str, top_k: int = 5, filter_where: dict = None, rerank_query: str = None) -> List[Dict]:
+        """Retrieve relevant documents, optionally filtered by metadata.
+
+        query: used for vector similarity search (typically rewritten query)
+        rerank_query: used for CrossEncoder reranking (defaults to query if not provided)
+        """
         filter_info = f" (filter: {filter_where})" if filter_where else ""
         candidate_k = top_k * settings.RETRIEVAL_CANDIDATE_MULTIPLIER if self.reranker else top_k
         results = self.vector_store.similarity_search(query, k=candidate_k, filter_where=filter_where)
+
         if self.reranker:
-            results = self.reranker.rerank(query, results, top_k=top_k)
+            effective_rerank_query = rerank_query if rerank_query is not None else query
+            results = self.reranker.rerank(effective_rerank_query, results, top_k=top_k)
+            
         print(f"  [RETRIEVAL] Lấy top {len(results)} docs{filter_info}")
         return results
 
