@@ -9,10 +9,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserOut)
 async def register(user_in: UserCreate):
-    # Check if user exists
-    existing_user = query_one("SELECT id FROM users WHERE username = %s OR email = %s", (user_in.username, user_in.email))
+    # Check username uniqueness
+    existing_user = query_one("SELECT id FROM users WHERE username = %s", (user_in.username,))
     if existing_user:
-        raise HTTPException(status_code=400, detail="Username or email already registered")
+        raise HTTPException(status_code=400, detail="Username already registered")
+
+    # Check email uniqueness only if provided (NULL = NULL is FALSE in SQL)
+    if user_in.email:
+        existing_email = query_one("SELECT id FROM users WHERE email = %s", (user_in.email,))
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_pwd = get_password_hash(user_in.password)
     

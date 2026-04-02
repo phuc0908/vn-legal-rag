@@ -76,7 +76,7 @@ async def reload_llm():
 
 
 @router.post("/documents/add")
-async def add_document(title: str, content: str, metadata: Optional[dict] = None):
+async def add_document(title: str, content: str, metadata: Optional[dict] = None, current_user: dict = Depends(get_current_user)):
     """
     Add a legal document to the knowledge base
     """
