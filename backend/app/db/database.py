@@ -2,6 +2,7 @@ import os
 import pymysql
 import pymysql.cursors
 from contextlib import contextmanager
+from dbutils.pooled_db import PooledDB
 
 DB_CONFIG = {
     "host":     os.getenv("DB_HOST", "localhost"),
@@ -13,9 +14,18 @@ DB_CONFIG = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
+_pool = PooledDB(
+    creator=pymysql,
+    mincached=2,       # số connection giữ sẵn khi idle
+    maxcached=10,      # max connection idle trong pool
+    maxconnections=20, # max tổng connection (0 = không giới hạn)
+    blocking=True,     # chờ khi pool đầy thay vì raise lỗi
+    **DB_CONFIG
+)
+
 
 def get_connection():
-    return pymysql.connect(**DB_CONFIG)
+    return _pool.connection()
 
 
 @contextmanager
@@ -24,7 +34,7 @@ def get_db():
     try:
         yield conn
     finally:
-        conn.close()
+        conn.close()  # trả về pool, không đóng thật
 
 
 def query_one(sql: str, params=None):

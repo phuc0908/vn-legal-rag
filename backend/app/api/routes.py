@@ -5,6 +5,7 @@ from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
 from app.rag.pipeline import get_rag_pipeline
 from app.core.auth import get_current_user
 from app.utils.db_helpers import save_message, update_conversation_title
+from app.db.database import query_one
 import app.rag.pipeline as pipeline_module
 import app.rag.llm as llm_module
 
@@ -29,15 +30,21 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
         # Persistence for authenticated user
         if request.conversation_id:
             try:
+                # Kiểm tra trước khi lưu — nếu chưa có message nào thì đây là query đầu tiên
+                existing = query_one(
+                    "SELECT COUNT(*) as cnt FROM messages WHERE conversation_id = %s",
+                    (request.conversation_id,)
+                )
+                is_first_message = existing["cnt"] == 0
+
                 save_message(request.conversation_id, "user", request.query)
                 save_message(request.conversation_id, "assistant", response.answer)
+
+                if is_first_message:
+                    update_conversation_title(request.conversation_id, request.query[:60])
             except Exception as db_err:
                 # Không fail toàn bộ request nếu chỉ lỗi lưu DB
                 print(f"Warning: failed to save messages to DB: {db_err}")
-            
-            # 3. Optional: Update title if it's new (simple first 30 chars of query)
-            # (In a real app, you'd generate a title with LLM)
-            # update_conversation_title(request.conversation_id, request.query[:50])
 
         return response
 
