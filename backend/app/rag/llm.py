@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
-from google import genai
-from google.genai import types
+import requests
 from app.core.config import settings
 
 _ENV_FILE = Path(__file__).parent.parent.parent / ".env"
@@ -58,48 +57,48 @@ NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
 TRẢ LỜI:"""
 
 
-class GeminiLLM:
+class GroqLLM:
 
     def __init__(self):
-        api_key = _read_env_key("GEMINI_API_KEY") or settings.GEMINI_API_KEY
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY chưa được cấu hình trong file .env")
-        self._client = genai.Client(api_key=api_key)
+        self._api_key = _read_env_key("GROQ_API_KEY") or settings.GROQ_API_KEY
+        if not self._api_key:
+            raise ValueError("GROQ_API_KEY chưa được cấu hình trong file .env")
         self._model = _read_env_key("LLM_MODEL") or settings.LLM_MODEL
+        self._url = "https://api.groq.com/openai/v1/chat/completions"
+
+    def _call(self, prompt: str, temperature: float = None, max_tokens: int = None) -> str:
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self._model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature if temperature is not None else settings.LLM_TEMPERATURE,
+            "max_tokens": max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS,
+        }
+        resp = requests.post(self._url, json=payload, headers=headers, timeout=60)
+        if not resp.ok:
+            print(f"[GROQ ERROR] {resp.status_code}: {resp.text}")
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
 
     def generate(self, prompt: str) -> str:
         try:
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=settings.LLM_TEMPERATURE,
-                    max_output_tokens=settings.LLM_MAX_TOKENS,
-                ),
-            )
-            if not response.text:
-                return "Không thể tạo câu trả lời cho câu hỏi này. Vui lòng thử diễn đạt lại câu hỏi."
-            return response.text
+            result = self._call(prompt)
+            return result or "Không thể tạo câu trả lời. Vui lòng thử lại."
         except Exception as e:
             err = str(e)
-            if "503" in err or "UNAVAILABLE" in err:
-                return "Hệ thống AI đang bận, vui lòng thử lại sau ít phút."
-            if "429" in err or "RESOURCE_EXHAUSTED" in err:
-                return "Hệ thống đang xử lý nhiều yêu cầu, vui lòng thử lại sau."
+            if "429" in err:
+                return "Hệ thống đang bận, vui lòng thử lại sau."
             raise
 
     def rewrite_query(self, query: str) -> str:
         prompt = REWRITE_PROMPT.format(question=query)
         try:
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=prompt,
-                config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=128),
-            )
-            rewritten = (response.text or "").strip()
-            return rewritten if rewritten else query
+            return self._call(prompt, temperature=0.1, max_tokens=128) or query
         except Exception:
-            return query  # fallback về query gốc nếu rewrite lỗi
+            return query
 
     def generate_with_context(self, query: str, context: str) -> str:
         prompt = PROMPT_TEMPLATE.format(context=context, question=query)
@@ -111,9 +110,10 @@ class LLMManager:
         self.llm = self._init_llm()
 
     def _init_llm(self):
-        if settings.LLM_PROVIDER == "gemini":
-            return GeminiLLM()
-        raise ValueError(f"LLM provider không hỗ trợ: {settings.LLM_PROVIDER}")
+        provider = _read_env_key("LLM_PROVIDER") or settings.LLM_PROVIDER
+        if provider == "groq":
+            return GroqLLM()
+        raise ValueError(f"LLM provider không hỗ trợ: {provider}")
 
     def rewrite_query(self, query: str) -> str:
         return self.llm.rewrite_query(query)

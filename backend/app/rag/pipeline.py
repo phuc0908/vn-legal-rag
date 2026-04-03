@@ -137,8 +137,10 @@ class RAGPipeline:
                 lines.append(f"Điều: {tieu_de}")
 
             header = f"[Nguồn {i}] " + " | ".join(lines) if lines else f"[Nguồn {i}]"
-            context_parts.append(f"{header}\n{doc['content']}")
-        return "\n\n---\n\n".join(context_parts)
+            content = doc['content'][:1500]  # giới hạn mỗi đoạn để tránh timeout
+            context_parts.append(f"{header}\n{content}")
+        context = "\n\n---\n\n".join(context_parts)
+        return context[:4000]  # giới hạn tổng context
 
 
 # Global RAG pipeline instance

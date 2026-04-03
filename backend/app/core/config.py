@@ -19,9 +19,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     # LLM Configuration
-    LLM_PROVIDER: str = "gemini"
-    LLM_MODEL: str = "gemini-3-flash-preview"
+    LLM_PROVIDER: str = "groq"
+    LLM_MODEL: str = "llama3-8b-8192"
     GEMINI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
     LLM_TEMPERATURE: float = 0.5
     LLM_MAX_TOKENS: int = 2048
 
