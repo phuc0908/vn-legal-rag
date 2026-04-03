@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -7,9 +7,16 @@ import LawBrowserPage from './pages/LawBrowserPage'
 import DieuDetailPage from './pages/DieuDetailPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import { useThemeStore } from './store/themeStore'
 import './App.css'
 
 function App() {
+  const { isDark } = useThemeStore()
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+  }, [isDark])
+
   return (
     <BrowserRouter>
       <Routes>

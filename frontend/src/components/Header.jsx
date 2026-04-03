@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import ThemeToggle from './ThemeToggle'
 import '../styles/Header.css'
 
 export default function Header() {
@@ -45,6 +46,7 @@ export default function Header() {
         </nav>
 
         <div className="header-actions">
+          <ThemeToggle />
           {isAuthenticated ? (
             <div className="user-profile">
               <span className="user-name">Chào, {user?.full_name || user?.username}</span>

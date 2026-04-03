@@ -1,6 +1,6 @@
 .site-header {
-  background: #fff;
-  border-bottom: 2px solid #c0392b;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--accent);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -207,3 +207,14 @@
     display: none;
   }
 }
+
+/* ── Dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] .logo-main { color: var(--accent); }
+[data-theme="dark"] .logo-sub  { color: var(--text-muted); }
+[data-theme="dark"] .nav-link  { color: var(--text-secondary); }
+[data-theme="dark"] .nav-link:hover,
+[data-theme="dark"] .nav-link.active { background: var(--bg-hover); color: var(--accent); }
+[data-theme="dark"] .user-name { color: var(--text-primary); }
+[data-theme="dark"] .logout-btn { background: var(--bg-hover); color: #f87171; }
+[data-theme="dark"] .logout-btn:hover { background: var(--accent-light); }
+[data-theme="dark"] .mobile-menu-btn span { background: var(--text-secondary); }

@@ -5,6 +5,7 @@ import InputArea from '../components/InputArea'
 import Sidebar from '../components/Sidebar'
 import { useAuthStore } from '../store/authStore'
 import { useChatStore } from '../store/chatStore'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/ChatPage.css'
 
 export default function ChatPage() {
@@ -84,6 +85,7 @@ export default function ChatPage() {
             <Link to="/" className="chat-header-logo">⚖️</Link>
             <h1>Tư vấn Pháp lý AI</h1>
           </div>
+          <ThemeToggle />
           <Link to="/" className="chat-home-link">← Trang chủ</Link>
         </div>
         {isChatLoading ? (

@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f7f8fc;
+  background: var(--bg-page);
 }
 
 .auth-container {
@@ -129,3 +129,14 @@
 .auth-footer a:hover {
   text-decoration: underline;
 }
+
+/* ── Dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] .auth-form           { background: var(--bg-surface); border-color: var(--border-color); box-shadow: 0 10px 25px var(--shadow-sm); }
+[data-theme="dark"] .auth-form h2        { color: var(--text-primary); }
+[data-theme="dark"] .auth-subtitle       { color: var(--text-secondary); }
+[data-theme="dark"] .form-group label    { color: var(--text-secondary); }
+[data-theme="dark"] .form-group input    { background: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="dark"] .form-group input:focus { background: var(--bg-surface); border-color: #3b82f6; }
+[data-theme="dark"] .auth-error          { background: var(--accent-light); border-color: var(--accent); color: #fca5a5; }
+[data-theme="dark"] .auth-success        { background: #052e16; border-color: #166534; color: #86efac; }
+[data-theme="dark"] .auth-footer         { color: var(--text-secondary); }

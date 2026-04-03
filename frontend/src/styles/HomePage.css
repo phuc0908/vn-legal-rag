@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f7f8fc;
+  background: var(--bg-page);
 }
 
 /* ── Hero ─────────────────────────────── */
@@ -640,3 +640,28 @@
     padding: 0 16px;
   }
 }
+
+/* ── Dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] .stats-bar           { background: var(--bg-surface); border-color: var(--border-color); }
+[data-theme="dark"] .stat-item span      { color: var(--text-muted); }
+[data-theme="dark"] .stat-divider        { background: var(--border-color); }
+[data-theme="dark"] .section-title       { color: var(--text-primary); }
+[data-theme="dark"] .section-sub         { color: var(--text-secondary); }
+[data-theme="dark"] .category-card       { background: var(--bg-surface); border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="dark"] .category-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px var(--accent-ring); }
+[data-theme="dark"] .features-section    { background: var(--bg-surface); border-color: var(--border-color); }
+[data-theme="dark"] .feature-card        { background: var(--bg-page); border-color: var(--border-color); }
+[data-theme="dark"] .feature-card.featured { background: var(--accent-light); border-color: var(--accent); }
+[data-theme="dark"] .feature-card h3     { color: var(--text-primary); }
+[data-theme="dark"] .feature-card p      { color: var(--text-secondary); }
+[data-theme="dark"] .feature-btn         { background: var(--bg-surface); border-color: var(--border-color); color: var(--text-secondary); }
+[data-theme="dark"] .feature-btn:hover   { border-color: var(--accent); color: var(--accent); }
+[data-theme="dark"] .question-card       { background: var(--bg-surface); border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="dark"] .question-card:hover { border-color: var(--accent); }
+[data-theme="dark"] .phapdien-section    { background: var(--bg-page); }
+[data-theme="dark"] .phapdien-card       { background: var(--bg-surface); border-color: var(--border-color); }
+[data-theme="dark"] .phapdien-left h2    { color: var(--text-primary); }
+[data-theme="dark"] .phapdien-left p     { color: var(--text-secondary); }
+[data-theme="dark"] .search-input-wrap   { background: var(--bg-surface); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+[data-theme="dark"] .search-input-wrap input { color: var(--text-primary); }
+[data-theme="dark"] .search-input-wrap input::placeholder { color: var(--text-muted); }

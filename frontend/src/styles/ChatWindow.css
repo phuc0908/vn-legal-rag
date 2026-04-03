@@ -6,6 +6,7 @@
   flex-direction: column;
   gap: 0;
   scroll-behavior: smooth;
+  background: var(--bg-page);
 }
 
 .chat-window::-webkit-scrollbar {
@@ -17,12 +18,12 @@
 }
 
 .chat-window::-webkit-scrollbar-thumb {
-  background: #d0d0d8;
+  background: var(--border-color);
   border-radius: 3px;
 }
 
 .chat-window::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: var(--text-muted);
 }
 
 .empty-state {
@@ -38,12 +39,12 @@
 .empty-state h2 {
   font-size: 22px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .empty-state p {
   font-size: 14px;
-  color: #888;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 

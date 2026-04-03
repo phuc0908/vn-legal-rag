@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f7f8fc;
+  background: var(--bg-page);
 }
 
 /* ── Hero ─────────────────────────────── */
@@ -252,3 +252,19 @@
     font-size: 24px;
   }
 }
+
+/* ── Dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] .browser-content     { background: var(--bg-page); }
+[data-theme="dark"] .browser-sidebar-box,
+[data-theme="dark"] .chuong-list,
+[data-theme="dark"] .dieu-list-panel     { background: var(--bg-surface); border-color: var(--border-color); }
+[data-theme="dark"] .sidebar-box-title,
+[data-theme="dark"] .panel-title         { color: var(--text-primary); border-color: var(--border-color); }
+[data-theme="dark"] .chuong-item         { border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="dark"] .chuong-item:hover,
+[data-theme="dark"] .chuong-item.active  { background: var(--bg-hover); }
+[data-theme="dark"] .chuong-item.active  { border-left-color: var(--accent); color: var(--accent); }
+[data-theme="dark"] .dieu-item           { border-color: var(--border-color); color: var(--text-primary); }
+[data-theme="dark"] .dieu-item:hover     { background: var(--bg-hover); color: var(--accent); }
+[data-theme="dark"] .demuc-item          { background: var(--bg-hover); border-color: var(--border-color); color: var(--text-secondary); }
+[data-theme="dark"] .demuc-item.active   { background: var(--accent-light); color: var(--accent); }

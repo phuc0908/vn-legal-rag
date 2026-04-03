@@ -3,7 +3,7 @@
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background-color: #f8fafc;
+  background-color: var(--bg-page);
 }
 
 .chat-container {
@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #f7f8fc;
+  background: var(--bg-page);
   min-width: 0;
 }
 
@@ -20,8 +20,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: #fff;
-  border-bottom: 2px solid #c0392b;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--accent);
   flex-shrink: 0;
 }
 
@@ -42,7 +42,7 @@
 .chat-header h1 {
   font-size: 15px;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -53,7 +53,7 @@
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #888;
+  color: var(--text-secondary);
   padding: 6px 8px;
   border-radius: 6px;
   transition: background-color 0.2s;
@@ -62,14 +62,37 @@
 }
 
 .menu-btn:hover {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Dark mode toggle button */
+.theme-toggle-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--accent);
 }
 
 .chat-home-link {
   font-size: 13px;
   font-weight: 500;
-  color: #888;
+  color: var(--text-secondary);
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 6px;
@@ -79,8 +102,8 @@
 }
 
 .chat-home-link:hover {
-  color: #c0392b;
-  background: #fff5f5;
+  color: var(--accent);
+  background: var(--accent-light);
 }
 
 @media (max-width: 768px) {
@@ -95,7 +118,7 @@
 
 /* Auth Guard Styles */
 .auth-guard-page {
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%);
+  background: var(--bg-page);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,12 +133,12 @@
 }
 
 .auth-guard-card {
-  background: white;
+  background: var(--bg-surface);
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 30px var(--shadow-sm);
   text-align: center;
-  border: 1px solid #eef2f6;
+  border: 1px solid var(--border-color);
 }
 
 .auth-guard-icon {
@@ -125,13 +148,13 @@
 
 .auth-guard-card h2 {
   font-size: 26px;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 12px;
   font-weight: 800;
 }
 
 .auth-guard-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 32px;
   font-size: 15px;
@@ -160,7 +183,7 @@
 }
 
 .auth-guard-actions .register-btn {
-  background: white;
+  background: var(--bg-surface);
   color: #2563eb;
   padding: 14px;
   border-radius: 12px;
@@ -171,18 +194,18 @@
 }
 
 .auth-guard-actions .register-btn:hover {
-  background: #f0f7ff;
+  background: var(--bg-hover);
 }
 
 .back-home-link {
-  color: #64748b;
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
 }
 
 .back-home-link:hover {
-  color: #1e293b;
+  color: var(--text-primary);
   text-decoration: underline;
 }
 
@@ -191,6 +214,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 15px;
 }
