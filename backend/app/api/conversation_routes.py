@@ -3,22 +3,33 @@ from typing import List
 from app.core.auth import get_current_user
 from app.models.schemas import ConversationOut, MessageOut
 from app.db.database import query_all, query_one, get_db
+from app.utils.db_helpers import update_conversation_title
 import uuid
 from datetime import datetime
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
+_DEFAULT_TITLE = "Cuộc trò chuyện mới"
+
 @router.get("/", response_model=List[ConversationOut])
 async def get_user_conversations(current_user: dict = Depends(get_current_user)):
     convs = query_all("SELECT * FROM conversations WHERE user_id = %s ORDER BY created_at DESC", (current_user["id"],))
-    
-    # Process each conversation to add its messages
+
     results = []
     for conv in convs:
         messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at ASC", (conv["id"],))
         conv["messages"] = messages
+
+        # Nếu title vẫn là mặc định nhưng đã có messages → derive từ tin nhắn user đầu tiên
+        if conv.get("title") in (None, "", _DEFAULT_TITLE) and messages:
+            first_user = next((m for m in messages if m["role"] == "user"), None)
+            if first_user:
+                new_title = first_user["content"][:60]
+                update_conversation_title(conv["id"], new_title)
+                conv["title"] = new_title
+
         results.append(conv)
-        
+
     return results
 
 @router.post("/", response_model=ConversationOut)
