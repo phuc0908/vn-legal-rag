@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Security
-    SECRET_KEY: str = "your-secret-key-here"
+    SECRET_KEY: str = "Phuc123456789"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     RERANKER_MODEL: str = "AITeamVN/Vietnamese_Reranker"
     RERANKER_TOP_K: int = 5
     RETRIEVAL_CANDIDATE_MULTIPLIER: int = 3
+
+    # Hierarchical RAG — Topic Router
+    TOPIC_ROUTER_ENABLED: bool = True
 
     # Database
     DATABASE_URL: Optional[str] = None

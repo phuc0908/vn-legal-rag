@@ -14,18 +14,25 @@ DB_CONFIG = {
     "cursorclass": pymysql.cursors.DictCursor,
 }
 
-_pool = PooledDB(
-    creator=pymysql,
-    mincached=2,       # số connection giữ sẵn khi idle
-    maxcached=10,      # max connection idle trong pool
-    maxconnections=20, # max tổng connection (0 = không giới hạn)
-    blocking=True,     # chờ khi pool đầy thay vì raise lỗi
-    **DB_CONFIG
-)
+_pool = None
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = PooledDB(
+            creator=pymysql,
+            mincached=2,
+            maxcached=10,
+            maxconnections=20,
+            blocking=True,
+            **DB_CONFIG
+        )
+    return _pool
 
 
 def get_connection():
-    return _pool.connection()
+    return _get_pool().connection()
 
 
 @contextmanager

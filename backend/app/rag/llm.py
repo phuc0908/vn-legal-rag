@@ -1,5 +1,7 @@
 import os
+import re
 from pathlib import Path
+from typing import Optional
 import requests
 from app.core.config import settings
 
@@ -143,3 +145,63 @@ def get_llm_manager() -> LLMManager:
             print(f"Warning: {e}")
             return None
     return llm_manager
+
+
+# ── Hierarchical RAG: Topic Router ───────────────────────────────────────────
+
+TOPIC_ROUTER_PROMPT = """Bạn là hệ thống phân loại câu hỏi pháp lý tự động. Cho câu hỏi dưới đây, hãy chọn CHỦ ĐỀ PHÁP LÝ phù hợp nhất từ danh sách.
+
+DANH SÁCH CHỦ ĐỀ:
+{topic_list}
+
+CÂU HỎI: {question}
+
+Yêu cầu:
+- Chỉ trả về đúng 1 con số là ID của chủ đề phù hợp nhất
+- Nếu không có chủ đề nào phù hợp, trả về 0
+- Không giải thích, không thêm ký tự khác
+
+ID chủ đề:"""
+
+
+class TopicRouter:
+    """Routes queries to the most relevant legal topic (chu_de) using LLM classification.
+
+    This is the first layer of the Hierarchical RAG architecture:
+    Query → topic routing → bounded subset retrieval → generation
+    """
+
+    def __init__(self, llm: GroqLLM, topics: list):
+        self.llm = llm
+        # Map: str(id) → ten (topic name)
+        self._topic_map: dict = {str(t["id"]): t["ten"] for t in topics}
+        self._topic_list_str: str = "\n".join(
+            f"  {t['id']}: {t['ten']}" for t in topics
+        )
+        print(f"[ROUTER] Khởi tạo TopicRouter với {len(topics)} chủ đề: "
+              + ", ".join(f"{t['id']}={t['ten']}" for t in topics))
+
+    def route(self, query: str) -> Optional[str]:
+        """Classify query into a chu_de_id string, or None if no match / on error."""
+        if not self._topic_map:
+            return None
+        prompt = TOPIC_ROUTER_PROMPT.format(
+            topic_list=self._topic_list_str,
+            question=query,
+        )
+        try:
+            raw = self.llm._call(prompt, temperature=0.0, max_tokens=10)
+            # Extract the first integer token from response
+            match = re.search(r"\d+", raw.strip())
+            if not match:
+                return None
+            topic_id = match.group(0)
+            if topic_id == "0":
+                print(f"  [ROUTER] Không khớp chủ đề nào → tìm kiếm toàn bộ")
+                return None
+            if topic_id in self._topic_map:
+                print(f"  [ROUTER] → ID={topic_id} ({self._topic_map[topic_id]})")
+                return topic_id
+        except Exception as e:
+            print(f"  [ROUTER] Lỗi phân loại topic: {e}")
+        return None
