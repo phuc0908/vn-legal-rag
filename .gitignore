@@ -3,3 +3,6 @@ project_context.md
 .vscode/
 notebooks/
 scripts/
+p2p.md
+backend/tests/report.html
+docs

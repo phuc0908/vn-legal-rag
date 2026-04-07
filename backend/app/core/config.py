@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # Hierarchical RAG — Topic Router
     TOPIC_ROUTER_ENABLED: bool = True
 
+    # Hybrid Search — BM25 + Vector
+    HYBRID_SEARCH_ENABLED: bool = True
+    BM25_INDEX_PATH: str = "./bm25_index.pkl"
+    RRF_K: int = 60
+
     # Database
     DATABASE_URL: Optional[str] = None
 
