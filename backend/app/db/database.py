@@ -41,7 +41,7 @@ def get_db():
     try:
         yield conn
     finally:
-        conn.close()  # trả về pool, không đóng thật
+        conn.close()
 
 
 def query_one(sql: str, params=None):

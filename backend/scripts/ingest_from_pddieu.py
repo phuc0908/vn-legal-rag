@@ -68,6 +68,77 @@ def _strip_html(html: str) -> str:
     return re.sub(r'\s+', ' ', text).strip()
 
 
+def _split_khoans(noidung: str) -> list[str]:
+    """
+    Tách nội dung điều thành các khoản (1. 2. 3. ...).
+    Trả về list các khoản. Nếu không có khoản, trả về [noidung].
+    """
+    # Tìm vị trí các khoản: số nguyên theo sau là dấu chấm và khoảng trắng
+    # Chỉ match ở đầu chuỗi hoặc sau khoảng trắng (tránh match "10.5" hay "điều 1.")
+    positions = [m.start() for m in re.finditer(r'(?<!\S)(\d+)\. ', noidung)]
+    if len(positions) < 2:
+        return [noidung]
+    parts = []
+    for i, pos in enumerate(positions):
+        end = positions[i + 1] if i + 1 < len(positions) else len(noidung)
+        parts.append(noidung[pos:end].strip())
+    return parts
+
+
+def _build_header(row: dict) -> str:
+    header_parts = []
+    if row.get('chu_de'):
+        header_parts.append(f"Chủ đề: {row['chu_de']}")
+    if row.get('de_muc'):
+        header_parts.append(f"Đề mục: {row['de_muc']}")
+    if row.get('chuong_ten'):
+        header_parts.append(f"Chương: {row['chuong_ten']}")
+    return " | ".join(header_parts)
+
+
+def _build_metadata(row: dict) -> dict:
+    return {
+        "dieu_mapc":  str(row['mapc']),
+        "dieu_ten":   str(row['dieu_ten'] or ''),
+        "chu_de_id":  str(row['chu_de_id']),
+        "chu_de":     str(row['chu_de'] or ''),
+        "de_muc":     str(row['de_muc'] or ''),
+        "chuong_ten": str(row.get('chuong_ten') or ''),
+    }
+
+
+def smart_chunks(row: dict) -> list[dict]:
+    """
+    Tách 1 điều thành 1 hoặc nhiều chunks.
+    - Nếu noidung có nhiều khoản (1. 2. 3.) → mỗi khoản = 1 chunk
+      content = header + tên điều + nội dung khoản
+    - Ngược lại → 1 chunk toàn bộ điều
+    Metadata giữ nguyên cho tất cả chunks (không thêm khoan_so).
+    """
+    noidung = _strip_html(row.get('noidung', ''))
+    header = _build_header(row)
+    dieu_ten = str(row.get('dieu_ten') or '')
+    metadata = _build_metadata(row)
+
+    khoans = _split_khoans(noidung)
+
+    if len(khoans) == 1:
+        # Không có nhiều khoản → giữ nguyên
+        parts = [p for p in [header, dieu_ten, noidung] if p]
+        if row.get('vbqppl'):
+            parts.append(f"Văn bản: {row['vbqppl']}")
+        return [{"id": f"pddieu_{row['mapc']}", "content": "\n".join(parts), "metadata": metadata}]
+
+    chunks = []
+    for i, khoan_text in enumerate(khoans, 1):
+        parts = [p for p in [header, dieu_ten, khoan_text] if p]
+        chunks.append({
+            "id":       f"pddieu_{row['mapc']}_k{i}",
+            "content":  "\n".join(parts),
+            "metadata": metadata,
+        })
+    return chunks
+
 
 # ── Fetch pddieu với JOIN ─────────────────────────────────────────────────────
 
@@ -211,24 +282,12 @@ def export_rows_to_json(rows: list, path: str = None):
     out_path = path or EXPORT_PATH
     data = []
     for r in rows:
-        content = build_content(dict(r))
-        if not content.strip():
-            continue
-        data.append({
-            "id": f"pddieu_{r['mapc']}",
-            "content": content,
-            "metadata": {
-                "dieu_mapc":   str(r['mapc']),
-                "dieu_ten":    str(r['dieu_ten'] or ''),
-                "chu_de_id":   str(r['chu_de_id']),
-                "chu_de":      str(r['chu_de'] or ''),
-                "de_muc":      str(r['de_muc'] or ''),
-                "chuong_ten":  str(r.get('chuong_ten') or ''),
-            },
-        })
+        for chunk in smart_chunks(dict(r)):
+            if chunk["content"].strip():
+                data.append(chunk)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
-    log(f"Đã export {len(data)} rows → {out_path} ({os.path.getsize(out_path) / 1024 / 1024:.1f} MB)")
+    log(f"Đã export {len(data)} chunks → {out_path} ({os.path.getsize(out_path) / 1024 / 1024:.1f} MB)")
     log("Tiếp theo: upload file này lên Google Colab để embed với GPU.")
 
 
@@ -242,38 +301,29 @@ def ingest(rows: list):
     rag = get_rag_system()
     log(f"Embedding model sẵn sàng sau {time.time() - t0:.1f}s")
 
-    total = len(rows)
+    # Expand tất cả rows thành chunks trước
+    log("Đang split theo khoản...")
+    all_chunks = []
+    for r in rows:
+        for chunk in smart_chunks(dict(r)):
+            if chunk["content"].strip():
+                all_chunks.append(chunk)
+    log(f"  {len(rows)} điều → {len(all_chunks)} chunks (tăng {len(all_chunks)-len(rows):+d})")
+
+    total = len(all_chunks)
     total_ingested = 0
     t_start = time.time()
 
-    log(f"Bắt đầu embed theo batch {BATCH_SIZE} rows (tổng: {total})...")
+    log(f"Bắt đầu embed theo batch {BATCH_SIZE} chunks (tổng: {total})...")
 
     for batch_start in range(0, total, BATCH_SIZE):
-        batch = rows[batch_start: batch_start + BATCH_SIZE]
+        batch = all_chunks[batch_start: batch_start + BATCH_SIZE]
         t_batch = time.time()
 
-        rows_to_add = []
-        for r in batch:
-            content = build_content(dict(r))
-            if not content.strip():
-                continue
-            rows_to_add.append({
-                "id": f"pddieu_{r['mapc']}",
-                "content": content,
-                "metadata": {
-                    "dieu_mapc":   str(r['mapc']),
-                    "dieu_ten":    str(r['dieu_ten'] or ''),
-                    "chu_de_id":   str(r['chu_de_id']),
-                    "chu_de":      str(r['chu_de'] or ''),
-                    "de_muc":      str(r['de_muc'] or ''),
-                    "chuong_ten":  str(r.get('chuong_ten') or ''),
-                },
-            })
-
         batch_idx = batch_start // BATCH_SIZE + 1
-        log(f"  Batch {batch_idx}: embed {len(rows_to_add)} rows...")
-        rag.add_documents_direct(rows_to_add)
-        total_ingested += len(rows_to_add)
+        log(f"  Batch {batch_idx}: embed {len(batch)} chunks...")
+        rag.add_documents_direct(batch)
+        total_ingested += len(batch)
 
         elapsed = time.time() - t_start
         batch_time = time.time() - t_batch
@@ -282,7 +332,7 @@ def ingest(rows: list):
         eta = (total - total_ingested) / speed if speed > 0 else 0
         log(
             f"  → [{total_ingested}/{total}] {pct:.1f}% | "
-            f"batch={batch_time:.1f}s | {speed:.0f} rows/s | ETA={eta:.0f}s"
+            f"batch={batch_time:.1f}s | {speed:.0f} chunks/s | ETA={eta:.0f}s"
         )
 
     log(f"Hoàn tất: {total_ingested} vectors sau {time.time() - t_start:.1f}s")
