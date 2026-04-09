@@ -50,11 +50,21 @@ class ChromaVectorStore(BaseVectorStore):
         """Search for similar documents, optionally filtered by metadata."""
         filter_info = f" | filter={filter_where}" if filter_where else ""
         print(f"  [CHROMA] similarity_search k={k}{filter_info} | query='{query[:80]}...'")
+        
         kwargs = {"query": query, "k": k}
         if filter_where:
             kwargs["filter"] = filter_where
-        results = self.vectorstore.similarity_search_with_relevance_scores(**kwargs)
-        print(f"  [CHROMA] Raw results: {len(results)} — scores: {[round(s, 4) for _, s in results]}")
+
+        try:
+            results = self.vectorstore.similarity_search_with_relevance_scores(**kwargs)
+        except TypeError:
+            # Một số phiên bản LangChain dùng 'where' thay vì 'filter'
+            kwargs.pop("filter", None)
+            if filter_where:
+                kwargs["where"] = filter_where
+            results = self.vectorstore.similarity_search_with_relevance_scores(**kwargs)
+            
+        print(f"  [CHROMA] Kết quả trả về: {len(results)} docs")
         return [
             {
                 "content": doc.page_content,

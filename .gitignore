@@ -2,7 +2,6 @@ project_context.md
 .claude/
 .vscode/
 notebooks/
-scripts/
 p2p.md
 backend/tests/report.html
 docs

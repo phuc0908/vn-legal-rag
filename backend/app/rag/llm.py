@@ -149,17 +149,24 @@ def get_llm_manager() -> LLMManager:
 
 # ── Hierarchical RAG: Topic Router ───────────────────────────────────────────
 
-TOPIC_ROUTER_PROMPT = """Bạn là hệ thống phân loại câu hỏi pháp lý tự động. Cho câu hỏi dưới đây, hãy chọn CHỦ ĐỀ PHÁP LÝ phù hợp nhất từ danh sách.
+TOPIC_ROUTER_PROMPT = """Bạn là chuyên gia phân loại văn bản pháp luật Việt Nam.
+Nhiệm vụ: Dựa trên câu hỏi, hãy chọn CHỦ ĐỀ PHÁP LÝ phù hợp nhất.
 
 DANH SÁCH CHỦ ĐỀ:
 {topic_list}
 
 CÂU HỎI: {question}
 
-Yêu cầu:
-- Chỉ trả về đúng 1 con số là ID của chủ đề phù hợp nhất
-- Nếu không có chủ đề nào phù hợp, trả về 0
-- Không giải thích, không thêm ký tự khác
+LƯU Ý QUAN TRỌNG:
+- Nếu câu hỏi nhắc đến "Bộ luật tố tụng hình sự" hoặc "Bộ luật hình sự" -> Phải chọn "Hình sự".
+- Nếu câu hỏi nhắc đến "Bộ luật tố tụng dân sự" hoặc "Bộ luật dân sự" -> Phải chọn "Dân sự".
+- Nếu câu hỏi nhắc đến "Luật đất đai" -> Phải chọn "Đất đai".
+- Kiểm tra kỹ các từ khóa chuyên môn trong câu hỏi để đối chiếu với danh sách chủ đề.
+
+YÊU CẦU PHẢN HỒI:
+- Chỉ trả về duy nhất 1 con số là ID của chủ đề (ví dụ: 5).
+- Nếu hoàn toàn không có chủ đề nào phù hợp, trả về 0.
+- Tuyệt đối không giải thích thêm.
 
 ID chủ đề:"""
 
@@ -175,8 +182,10 @@ class TopicRouter:
         self.llm = llm
         # Map: str(id) → ten (topic name)
         self._topic_map: dict = {str(t["id"]): t["ten"] for t in topics}
+        # Map: số thứ tự (1-based) → uuid — để LLM trả về số thay vì UUID
+        self._idx_to_uuid: dict = {str(i): str(t["id"]) for i, t in enumerate(topics, 1)}
         self._topic_list_str: str = "\n".join(
-            f"  {t['id']}: {t['ten']}" for t in topics
+            f"  {i}: {t['ten']}" for i, t in enumerate(topics, 1)
         )
         print(f"[ROUTER] Khởi tạo TopicRouter với {len(topics)} chủ đề: "
               + ", ".join(f"{t['id']}={t['ten']}" for t in topics))
@@ -191,15 +200,16 @@ class TopicRouter:
         )
         try:
             raw = self.llm._call(prompt, temperature=0.0, max_tokens=10)
-            # Extract the first integer token from response
+            # LLM trả về số thứ tự (1-based), map ngược lại UUID
             match = re.search(r"\d+", raw.strip())
             if not match:
                 return None
-            topic_id = match.group(0)
-            if topic_id == "0":
+            idx = match.group(0)
+            if idx == "0":
                 print(f"  [ROUTER] Không khớp chủ đề nào → tìm kiếm toàn bộ")
                 return None
-            if topic_id in self._topic_map:
+            topic_id = self._idx_to_uuid.get(idx)
+            if topic_id and topic_id in self._topic_map:
                 print(f"  [ROUTER] → ID={topic_id} ({self._topic_map[topic_id]})")
                 return topic_id
         except Exception as e:
