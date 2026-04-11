@@ -7,6 +7,7 @@ import LawBrowserPage from './pages/LawBrowserPage'
 import DieuDetailPage from './pages/DieuDetailPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import SavedPage from './pages/SavedPage'
 import { useThemeStore } from './store/themeStore'
 import './App.css'
 
@@ -25,6 +26,7 @@ function App() {
         <Route path="/tu-van" element={<ChatPage />} />
         <Route path="/phap-dien" element={<LawBrowserPage />} />
         <Route path="/phap-dien/dieu/:mapc" element={<DieuDetailPage />} />
+        <Route path="/da-luu" element={<SavedPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Routes>

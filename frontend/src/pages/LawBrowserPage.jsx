@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { getChude, getDemuc, getChuong, getDieuList } from '../services/api'
@@ -8,6 +8,8 @@ import '../styles/LawBrowserPage.css'
 
 export default function LawBrowserPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const autoSelectDone = useRef(false)
 
   // Global store states
   const {
@@ -37,6 +39,54 @@ export default function LawBrowserPage() {
       .then(setChudes)
       .finally(() => setLoadingChude(false))
   }, [])
+
+  // Auto-select from URL params (tra ngược từ SavedPage hoặc DieuDetailPage)
+  useEffect(() => {
+    if (autoSelectDone.current || chudes.length === 0) return
+    const chudeId = searchParams.get('chude_id')
+    if (!chudeId) return
+
+    const chude = chudes.find(c => String(c.id) === chudeId)
+    if (!chude) return
+
+    autoSelectDone.current = true
+    const demucId = searchParams.get('demuc_id')
+    const chuongId = searchParams.get('chuong_id')
+
+    resetToChude(chude)
+    setLoadingDemuc(true)
+    getDemuc(chude.id).then(demucs => {
+      setDemucs(demucs)
+      setLoadingDemuc(false)
+
+      if (!demucId) return
+      const demuc = demucs.find(d => String(d.id) === demucId)
+      if (!demuc) return
+
+      resetToDemuc(demuc)
+      setLoadingChuong(true)
+      getChuong(demuc.id).then(chuongs => {
+        setChuongs(chuongs)
+        setLoadingChuong(false)
+
+        if (!chuongId) {
+          // Load điều at demuc level if no chapters
+          if (chuongs.length === 0) {
+            setLoadingDieu(true)
+            getDieuList({ demucId: demuc.id }).then(setDieus).finally(() => setLoadingDieu(false))
+          }
+          return
+        }
+
+        const chuong = chuongs.find(c => c.mapc === decodeURIComponent(chuongId))
+        if (!chuong) return
+
+        resetToChuong(chuong)
+        setLoadingDieu(true)
+        getDieuList({ chuongId: chuong.mapc }).then(setDieus).finally(() => setLoadingDieu(false))
+      }).catch(() => setLoadingChuong(false))
+    }).catch(() => setLoadingDemuc(false))
+  }, [chudes, searchParams])
 
   const handleSelectChude = async (chude) => {
     if (selectedChude?.id === chude.id) return

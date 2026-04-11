@@ -47,6 +47,13 @@ export default function Header() {
 
         <div className="header-actions">
           <ThemeToggle />
+          <Link
+            to="/da-luu"
+            className={`saved-link ${location.pathname.startsWith('/da-luu') ? 'active' : ''}`}
+            title="Điều luật đã lưu & lịch sử xem"
+          >
+            ★ Đã lưu
+          </Link>
           {isAuthenticated ? (
             <div className="user-profile">
               <span className="user-name">Chào, {user?.full_name || user?.username}</span>

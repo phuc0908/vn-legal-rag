@@ -28,3 +28,4 @@ web_batches/
 scripts/benchmark_*.json
 *.pkl
 pddieu_export.json
+eval_cache/
