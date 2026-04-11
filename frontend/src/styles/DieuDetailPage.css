@@ -81,6 +81,17 @@
   font-weight: 600;
 }
 
+.bc-link {
+  color: #2563eb;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.bc-link:hover {
+  color: #c0392b;
+  text-decoration: underline;
+}
+
 /* ── Main Layout ─────────────────────────────── */
 .dieu-main {
   display: grid;
@@ -103,13 +114,52 @@
   background: linear-gradient(to bottom, #fff5f5, #fff);
 }
 
+.article-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .article-num {
   font-size: 12px;
   font-weight: 800;
   color: #c0392b;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  margin-bottom: 8px;
+}
+
+.bookmark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.bookmark-btn:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: #fffbeb;
+}
+
+.bookmark-btn.bookmarked {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: #fffbeb;
+}
+
+.bookmark-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .article-title {

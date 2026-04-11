@@ -64,6 +64,27 @@
   background: #fee2e2;
 }
 
+.saved-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-decoration: none;
+  border: 1.5px solid #e5e7eb;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.saved-link:hover,
+.saved-link.active {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
 .login-btn {
   background: #2563eb;
   color: white;
@@ -217,4 +238,7 @@
 [data-theme="dark"] .user-name { color: var(--text-primary); }
 [data-theme="dark"] .logout-btn { background: var(--bg-hover); color: #f87171; }
 [data-theme="dark"] .logout-btn:hover { background: var(--accent-light); }
+[data-theme="dark"] .saved-link { color: var(--text-secondary); border-color: var(--border-color); }
+[data-theme="dark"] .saved-link:hover,
+[data-theme="dark"] .saved-link.active { color: #f59e0b; border-color: #f59e0b; background: rgba(245,158,11,0.1); }
 [data-theme="dark"] .mobile-menu-btn span { background: var(--text-secondary); }
