@@ -2,7 +2,7 @@ import os
 import json
 
 # Lấy thư mục chứa file .py
-base_dir = os.path.dirname(os.path.abspath(__file__))
+base_dir = _SCRIPTS_DIR
 
 # web_batches nằm trong scripts
 output_dir = os.path.join(base_dir, "web_batches")

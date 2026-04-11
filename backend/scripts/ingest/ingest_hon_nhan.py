@@ -24,11 +24,21 @@ Usage:
 
 import sys
 import os
+# --- path setup ---
+_SCRIPT    = os.path.abspath(__file__)
+_SCRIPTS_DIR = os.path.dirname(_SCRIPT)
+BASE_DIR   = os.path.dirname(os.path.dirname(_SCRIPTS_DIR))
+sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+# ---
+
+import sys
+import os
 import re
 import time
 import json
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
 
 from app.db.database import get_db
 
@@ -37,15 +47,15 @@ DEMUC_HNGD_ID       = "4913a1cf-5f78-471c-a807-ed5f8c57aaee"   # Hôn nhân và 
 CHUONG_XVII_HS_MAPC = "1600100000000000200001700000000000000000" # Chương XVII BLHS
 
 CHROMA_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    BASE_DIR,
     "chroma_db_hon_nhan",
 )
 BM25_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    BASE_DIR,
     "bm25_hon_nhan.pkl",
 )
 EXPORT_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
+    _SCRIPTS_DIR,
     "hon_nhan_export.json",
 )
 

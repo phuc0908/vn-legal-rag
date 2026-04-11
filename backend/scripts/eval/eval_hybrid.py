@@ -20,14 +20,24 @@ Cache lưu tại: scripts/eval_cache/results.json
 
 import sys
 import os
+# --- path setup ---
+_SCRIPT    = os.path.abspath(__file__)
+_SCRIPTS_DIR = os.path.dirname(_SCRIPT)
+BASE_DIR   = os.path.dirname(os.path.dirname(_SCRIPTS_DIR))
+sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+# ---
+
+import sys
+import os
 import json
 import time
 import hashlib
 import argparse
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
 
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eval_cache")
+CACHE_DIR = os.path.join(_SCRIPTS_DIR, "eval_cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "results.json")
 TOP_K = 5
 

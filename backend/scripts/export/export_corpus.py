@@ -10,11 +10,21 @@ Cách chạy:
     python scripts/export_corpus.py --total 20000
 """
 
+import sys
+import os
+# --- path setup ---
+_SCRIPT    = os.path.abspath(__file__)
+_SCRIPTS_DIR = os.path.dirname(_SCRIPT)
+BASE_DIR   = os.path.dirname(os.path.dirname(_SCRIPTS_DIR))
+sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+# ---
+
 import sys, os, json, re, argparse
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
 
-SCRIPTS_DIR    = os.path.dirname(os.path.abspath(__file__))
+SCRIPTS_DIR    = _SCRIPTS_DIR
 QUESTIONS_PATH = os.path.join(SCRIPTS_DIR, "benchmark_questions.json")
 OUT_PATH       = os.path.join(SCRIPTS_DIR, "benchmark_corpus.json")
 DEFAULT_TOTAL  = 20000

@@ -29,18 +29,28 @@ Usage:
 
 import sys
 import os
+# --- path setup ---
+_SCRIPT    = os.path.abspath(__file__)
+_SCRIPTS_DIR = os.path.dirname(_SCRIPT)
+BASE_DIR   = os.path.dirname(os.path.dirname(_SCRIPTS_DIR))
+sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+# ---
+
+import sys
+import os
 import re
 import time
 import json
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
 
 from app.db.database import get_db
 
 BATCH_SIZE = 200
 PREVIEW_LIMIT = 20
-PREVIEW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pddieu_preview.json")
-EXPORT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pddieu_export.json")
+PREVIEW_PATH = os.path.join(_SCRIPTS_DIR, "pddieu_preview.json")
+EXPORT_PATH = os.path.join(_SCRIPTS_DIR, "pddieu_export.json")
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -53,7 +63,7 @@ def log(msg: str):
 def reset_chroma():
     import shutil
     chroma_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "chroma_db"
+        BASE_DIR, "chroma_db"
     )
     if os.path.exists(chroma_path):
         shutil.rmtree(chroma_path)

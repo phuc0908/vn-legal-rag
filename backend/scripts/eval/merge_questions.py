@@ -7,8 +7,8 @@ Cách chạy:
 
 import os, json, re, glob
 
-BATCHES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web_batches")
-OUT_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "benchmark_questions.json")
+BATCHES_DIR = os.path.join(_SCRIPTS_DIR, "web_batches")
+OUT_PATH    = os.path.join(_SCRIPTS_DIR, "benchmark_questions.json")
 
 
 def main():

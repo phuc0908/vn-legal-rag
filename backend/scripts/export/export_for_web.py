@@ -10,11 +10,21 @@ Output: thư mục scripts/web_batches/
     batch_01.txt, batch_02.txt, ...  (paste từng file vào web AI)
 """
 
+import sys
+import os
+# --- path setup ---
+_SCRIPT    = os.path.abspath(__file__)
+_SCRIPTS_DIR = os.path.dirname(_SCRIPT)
+BASE_DIR   = os.path.dirname(os.path.dirname(_SCRIPTS_DIR))
+sys.path.insert(0, BASE_DIR)
+os.chdir(BASE_DIR)
+# ---
+
 import sys, os, json, re, argparse, math
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, BASE_DIR)
 
-OUT_DIR       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web_batches")
+OUT_DIR       = os.path.join(_SCRIPTS_DIR, "web_batches")
 MIN_PER_TOPIC = 100  # lấy nhiều để sau filter is_meaningful vẫn đủ
 BATCH_SIZE    = 1   # số chủ đề mỗi batch (1 chủ đề = 1 file để không quá dài)
 
