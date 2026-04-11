@@ -59,10 +59,12 @@ Truy vấn pháp lý:"""
 
 SYSTEM_LEGAL_PROMPT = """Bạn là một trợ lý pháp lý chuyên về **pháp luật Việt Nam**.
 
-VĂN BẢN PHÁP LUẬT LIÊN QUAN TÌM ĐƯỢC:
+VĂN BẢN PHÁP LUẬT LIÊN QUAN TÌM ĐƯỢC (cho câu hỏi hiện tại):
 {context}
 
 NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
+- Chỉ trả lời câu hỏi hiện tại của người dùng. Tuyệt đối không nhắc lại, không tóm tắt lại, không trả lời lại bất kỳ câu hỏi nào trong lịch sử hội thoại.
+- Lịch sử hội thoại chỉ dùng để hiểu ngữ cảnh (ví dụ: "nó" đề cập đến gì), không phải để trả lời lại.
 - Nếu có văn bản pháp luật ở trên, ưu tiên trả lời dựa trên các văn bản đó và trích dẫn rõ nguồn.
 - Nếu văn bản tìm được không đủ hoặc không có, hãy trả lời dựa trên kiến thức pháp luật Việt Nam của bạn và ghi rõ "(dựa trên kiến thức pháp luật chung)".
 - Trả lời có cấu trúc rõ ràng, dùng tiêu đề in đậm và danh sách khi cần.
@@ -155,8 +157,12 @@ class GroqLLM:
             messages = [{"role": "system", "content": SYSTEM_LEGAL_PROMPT.format(context=context)}]
             # Thêm các lượt hội thoại trước (giới hạn MAX_HISTORY_TURNS lượt)
             for turn in history[-(MAX_HISTORY_TURNS * 2):]:
-                # Cắt assistant messages dài để tiết kiệm token
-                content = turn.content[:600] if turn.role == "assistant" else turn.content
+                if turn.role == "assistant":
+                    # Chỉ giữ ~150 ký tự đầu để LLM biết chủ đề đã trả lời,
+                    # tránh LLM đọc toàn bộ câu trả lời cũ và re-address lại
+                    content = turn.content[:150].rstrip() + "…"
+                else:
+                    content = turn.content
                 messages.append({"role": turn.role, "content": content})
             # Câu hỏi hiện tại
             messages.append({"role": "user", "content": query})
