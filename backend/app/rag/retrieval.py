@@ -94,8 +94,15 @@ class BM25Index:
         self._doc_metadatas: List[Dict] = []
 
     def _tokenize(self, text: str) -> List[str]:
-        """Tokenize Vietnamese text bằng whitespace — đủ để match số luật, tên điều."""
-        return re.sub(r'[^\w\s]', ' ', text.lower()).split()
+        """Tokenize Vietnamese text. Dùng underthesea word segmentation nếu có,
+        fallback về whitespace split (vẫn đủ để match số luật, tên điều)."""
+        cleaned = re.sub(r'[^\w\s]', ' ', text.lower())
+        try:
+            from underthesea import word_tokenize
+            segmented = word_tokenize(cleaned, format="text")
+            return segmented.split()
+        except ImportError:
+            return cleaned.split()
 
     def build(self, documents: List[Dict]) -> None:
         """Build BM25 index từ danh sách documents.
@@ -137,13 +144,26 @@ class BM25Index:
             print(f"[BM25] Lỗi load index: {e} — fallback về pure vector search")
             return False
 
-    def search(self, query: str, top_k: int) -> List[Dict]:
-        """Tìm kiếm BM25. Trả về [] nếu index chưa load hoặc không có kết quả."""
+    def search(self, query: str, top_k: int, filter_where: dict = None) -> List[Dict]:
+        """Tìm kiếm BM25. Trả về [] nếu index chưa load hoặc không có kết quả.
+
+        filter_where: dict metadata filter, ví dụ {"chu_de_id": "5"}.
+        Chỉ score các doc khớp filter, giữ nguyên BM25 ranking trong tập đó.
+        """
         if self._bm25 is None:
             return []
         tokens = self._tokenize(query)
         scores = self._bm25.get_scores(tokens)
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:top_k]
+
+        if filter_where:
+            candidate_indices = [
+                i for i, meta in enumerate(self._doc_metadatas)
+                if all(str(meta.get(k, "")) == str(v) for k, v in filter_where.items())
+            ]
+        else:
+            candidate_indices = range(len(scores))
+
+        top_indices = sorted(candidate_indices, key=lambda i: scores[i], reverse=True)[:top_k]
         return [
             {
                 "content": self._doc_contents[i],
@@ -167,13 +187,30 @@ class HybridRetriever:
         vector_results = self.vector_store.similarity_search(
             query, k=top_k, filter_where=filter_where
         )
-        bm25_results = self.bm25_index.search(query, top_k=top_k)
+        bm25_results = self.bm25_index.search(query, top_k=top_k, filter_where=filter_where)
 
-        print(f"  [HYBRID] vector={len(vector_results)} docs | bm25={len(bm25_results)} docs")
+        # Dedup BM25: nếu nhiều khoản của cùng 1 điều xuất hiện,
+        # chỉ giữ khoản có BM25 score cao nhất để tránh boost giả tạo trong RRF.
+        bm25_results = self._dedup_by_article(bm25_results)
+
+        print(f"  [HYBRID] vector={len(vector_results)} docs | bm25={len(bm25_results)} docs (after dedup)")
 
         merged = self._rrf_fusion(vector_results, bm25_results, top_k)
         print(f"  [HYBRID] RRF merged → {len(merged)} docs | top scores: {[round(d['score'], 5) for d in merged[:3]]}")
         return merged
+
+    def _dedup_by_article(self, results: List[Dict]) -> List[Dict]:
+        """Giữ lại khoản có BM25 score cao nhất cho mỗi dieu_mapc.
+
+        Ngăn nhiều khoản từ cùng 1 điều cộng dồn điểm RRF, gây boost giả tạo
+        cho những điều dài/nhiều khoản.
+        """
+        best: Dict[str, Dict] = {}
+        for doc in results:
+            did = doc.get("metadata", {}).get("dieu_mapc") or doc["content"][:50]
+            if did not in best or doc["score"] > best[did]["score"]:
+                best[did] = doc
+        return sorted(best.values(), key=lambda x: x["score"], reverse=True)
 
     def _rrf_fusion(self, vector_results: List[Dict], bm25_results: List[Dict], top_k: int) -> List[Dict]:
         """Reciprocal Rank Fusion: score(d) = Σ 1/(k + rank(d)) với k=RRF_K."""

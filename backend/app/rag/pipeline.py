@@ -43,16 +43,16 @@ class RAGPipeline:
         print(f"[QUERY] {request.query}")
         print(f"[QUERY] conversation_id={request.conversation_id} | top_k={request.top_k} | chu_de_id={request.chu_de_id}")
 
-        # ── 1. Query rewriting ────────────────────────────────────
+        # ── 1. Query rewriting (x) ────────────────────────────────────
         search_query = request.query
-        if self.llm_manager:
-            print(f"[REWRITE] Đang viết lại query...")
-            t_rw = time.time()
-            search_query = self.llm_manager.rewrite_query(request.query)
-            print(f"[REWRITE] '{request.query}' → '{search_query}' ({time.time()-t_rw:.2f}s)")
+        # if self.llm_manager:
+        #     print(f"[REWRITE] Đang viết lại query (history={len(request.chat_history or [])} turns)...")
+        #     t_rw = time.time()
+        #     search_query = self.llm_manager.rewrite_query(request.query, history=request.chat_history)
+        #     print(f"[REWRITE] '{request.query}' → '{search_query}' ({time.time()-t_rw:.2f}s)")
 
         # ── 1.5 Hierarchical topic routing ────────────────────────
-        chu_de_id = request.chu_de_id  # manual override takes priority
+        chu_de_id = request.chu_de_id
         if not chu_de_id and self.topic_router:
             print(f"[ROUTER] Đang phân loại chủ đề cho query...")
             t_rt = time.time()
@@ -68,7 +68,6 @@ class RAGPipeline:
         print(f"[RETRIEVAL] Hoàn tất sau {retrieval_time:.2f}s — tìm được {len(retrieved_docs)} đoạn văn bản")
 
         # Fallback: nếu user đã chọn chủ đề thủ công nhưng không tìm được gì
-        # (ví dụ: chọn "Hình sự" nhưng hỏi về "Y tế") → thử lại toàn bộ corpus
         if not retrieved_docs and request.chu_de_id:
             print(f"[RETRIEVAL] Không tìm thấy trong chủ đề ID={request.chu_de_id} — fallback tìm kiếm toàn bộ corpus...")
             t0 = time.time()
@@ -95,7 +94,7 @@ class RAGPipeline:
         else:
             print(f"[LLM] Gửi prompt tới Gemini ({self.llm_manager.llm.__class__.__name__})...")
             t1 = time.time()
-            answer = self.llm_manager.generate_answer(request.query, context)
+            answer = self.llm_manager.generate_answer(request.query, context, history=request.chat_history)
             llm_time = time.time() - t1
             print(f"[LLM] Nhận phản hồi sau {llm_time:.2f}s — độ dài câu trả lời: {len(answer)} ký tự")
             print(f"[LLM] Preview: {answer[:200].replace(chr(10), ' ')}...")

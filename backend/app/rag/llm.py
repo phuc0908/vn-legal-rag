@@ -43,6 +43,32 @@ Câu hỏi gốc: {question}
 
 Truy vấn pháp lý:"""
 
+REWRITE_WITH_HISTORY_PROMPT = """Bạn là trợ lý pháp lý. Dựa trên lịch sử hội thoại bên dưới và câu hỏi mới, hãy viết lại câu hỏi mới thành một truy vấn pháp lý độc lập, đầy đủ ngữ cảnh.
+
+Lịch sử hội thoại gần đây:
+{history}
+
+Câu hỏi mới: {question}
+
+Yêu cầu:
+- Nếu câu hỏi dùng đại từ ("nó", "điều đó", "như trên", "vấn đề này"...) hãy thay thế bằng nội dung cụ thể từ lịch sử
+- Nếu câu hỏi là tiếp nối ("còn nếu...", "thế thì...", "vậy...") hãy khai triển thành câu hỏi đầy đủ
+- Chỉ trả về đúng 1 câu truy vấn pháp lý, không giải thích
+
+Truy vấn pháp lý:"""
+
+SYSTEM_LEGAL_PROMPT = """Bạn là một trợ lý pháp lý chuyên về **pháp luật Việt Nam**.
+
+VĂN BẢN PHÁP LUẬT LIÊN QUAN TÌM ĐƯỢC:
+{context}
+
+NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
+- Nếu có văn bản pháp luật ở trên, ưu tiên trả lời dựa trên các văn bản đó và trích dẫn rõ nguồn.
+- Nếu văn bản tìm được không đủ hoặc không có, hãy trả lời dựa trên kiến thức pháp luật Việt Nam của bạn và ghi rõ "(dựa trên kiến thức pháp luật chung)".
+- Trả lời có cấu trúc rõ ràng, dùng tiêu đề in đậm và danh sách khi cần.
+- Chỉ dùng Markdown, không dùng thẻ HTML."""
+
+# Giữ lại để tương thích với single-turn (khi không có history)
 PROMPT_TEMPLATE = """Bạn là một trợ lý pháp lý chuyên về **pháp luật Việt Nam**.
 
 VĂN BẢN PHÁP LUẬT LIÊN QUAN TÌM ĐƯỢC:
@@ -58,6 +84,9 @@ NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
 
 TRẢ LỜI:"""
 
+# Số lượt hội thoại tối đa giữ trong context (1 lượt = 1 user + 1 assistant)
+MAX_HISTORY_TURNS = 3
+
 
 class GroqLLM:
 
@@ -68,14 +97,22 @@ class GroqLLM:
         self._model = _read_env_key("LLM_MODEL") or settings.LLM_MODEL
         self._url = "https://api.groq.com/openai/v1/chat/completions"
 
-    def _call(self, prompt: str, temperature: float = None, max_tokens: int = None) -> str:
+    def _call(self, prompt: str = None, messages: list = None,
+              temperature: float = None, max_tokens: int = None) -> str:
+        """Gọi Groq API.
+
+        Truyền `messages` để dùng multi-turn (system + history + user).
+        Truyền `prompt` để dùng single-turn đơn giản.
+        """
+        if messages is None:
+            messages = [{"role": "user", "content": prompt}]
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
         payload = {
             "model": self._model,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
             "temperature": temperature if temperature is not None else settings.LLM_TEMPERATURE,
             "max_tokens": max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS,
         }
@@ -85,9 +122,9 @@ class GroqLLM:
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"].strip()
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str = None, messages: list = None) -> str:
         try:
-            result = self._call(prompt)
+            result = self._call(prompt=prompt, messages=messages)
             return result or "Không thể tạo câu trả lời. Vui lòng thử lại."
         except Exception as e:
             err = str(e)
@@ -95,16 +132,39 @@ class GroqLLM:
                 return "Hệ thống đang bận, vui lòng thử lại sau."
             raise
 
-    def rewrite_query(self, query: str) -> str:
-        prompt = REWRITE_PROMPT.format(question=query)
+    def rewrite_query(self, query: str, history: list = None) -> str:
+        """Viết lại query. Nếu có history, giải quyết đại từ/tham chiếu."""
+        if history:
+            # Tóm tắt history thành text để đưa vào prompt rewrite
+            history_text = "\n".join(
+                f"{'Người dùng' if t.role == 'user' else 'Trợ lý'}: {t.content[:200]}"
+                for t in history[-(MAX_HISTORY_TURNS * 2):]
+            )
+            prompt = REWRITE_WITH_HISTORY_PROMPT.format(history=history_text, question=query)
+        else:
+            prompt = REWRITE_PROMPT.format(question=query)
         try:
-            return self._call(prompt, temperature=0.1, max_tokens=128) or query
+            return self._call(prompt=prompt, temperature=0.1, max_tokens=128) or query
         except Exception:
             return query
 
-    def generate_with_context(self, query: str, context: str) -> str:
-        prompt = PROMPT_TEMPLATE.format(context=context, question=query)
-        return self.generate(prompt)
+    def generate_with_context(self, query: str, context: str, history: list = None) -> str:
+        """Sinh câu trả lời. Nếu có history, dùng multi-turn messages."""
+        if history:
+            # System message chứa RAG context và nguyên tắc trả lời
+            messages = [{"role": "system", "content": SYSTEM_LEGAL_PROMPT.format(context=context)}]
+            # Thêm các lượt hội thoại trước (giới hạn MAX_HISTORY_TURNS lượt)
+            for turn in history[-(MAX_HISTORY_TURNS * 2):]:
+                # Cắt assistant messages dài để tiết kiệm token
+                content = turn.content[:600] if turn.role == "assistant" else turn.content
+                messages.append({"role": turn.role, "content": content})
+            # Câu hỏi hiện tại
+            messages.append({"role": "user", "content": query})
+            print(f"  [LLM] Multi-turn: system + {len(messages)-2} history msgs + 1 user")
+            return self.generate(messages=messages)
+        else:
+            prompt = PROMPT_TEMPLATE.format(context=context, question=query)
+            return self.generate(prompt=prompt)
 
 
 class LLMManager:
@@ -117,14 +177,14 @@ class LLMManager:
             return GroqLLM()
         raise ValueError(f"LLM provider không hỗ trợ: {provider}")
 
-    def rewrite_query(self, query: str) -> str:
-        return self.llm.rewrite_query(query)
+    def rewrite_query(self, query: str, history: list = None) -> str:
+        return self.llm.rewrite_query(query, history=history)
 
-    def generate_answer(self, query: str, context: str) -> str:
-        return self.llm.generate_with_context(query, context)
+    def generate_answer(self, query: str, context: str, history: list = None) -> str:
+        return self.llm.generate_with_context(query, context, history=history)
 
     def generate(self, prompt: str) -> str:
-        return self.llm.generate(prompt)
+        return self.llm.generate(prompt=prompt)
 
 
 llm_manager = None

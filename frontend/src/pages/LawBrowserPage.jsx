@@ -244,7 +244,7 @@ export default function LawBrowserPage() {
           <div className="col-header">
             <span className="col-icon">📄</span>
             <span>Điều luật</span>
-            {dieus.length > 0 && <span className="col-count">{dieus.length}</span>}
+            {dieus.length > 0 && <span className="col-count">{dieus.filter(d => !d.is_muc).length}</span>}
           </div>
           <div className="col-body">
             {!selectedDemuc ? (
@@ -258,17 +258,23 @@ export default function LawBrowserPage() {
                 <div className="col-empty">← Chọn chương</div>
               )
             ) : (
-              dieus.map((d) => (
-                <Link
-                  key={d.mapc}
-                  to={`/phap-dien/dieu/${encodeURIComponent(d.mapc)}`}
-                  className="dieu-item"
-                >
-                  <span className="dieu-num">Điều {d.chimuc}</span>
-                  <span className="dieu-text">{d.ten}</span>
-                  {d.vbqppl && <span className="dieu-vb">{d.vbqppl}</span>}
-                </Link>
-              ))
+              dieus.map((d) =>
+                d.is_muc ? (
+                  <div key={d.mapc} className="muc-header">
+                    <span className="muc-label">{d.ten}</span>
+                  </div>
+                ) : (
+                  <Link
+                    key={d.mapc}
+                    to={`/phap-dien/dieu/${encodeURIComponent(d.mapc)}`}
+                    className="dieu-item"
+                  >
+                    <span className="dieu-num">Điều {d.chimuc}</span>
+                    <span className="dieu-text">{d.ten}</span>
+                    {d.vbqppl && <span className="dieu-vb">{d.vbqppl}</span>}
+                  </Link>
+                )
+              )
             )}
           </div>
         </div>

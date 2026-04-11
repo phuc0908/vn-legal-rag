@@ -52,7 +52,12 @@ def list_dieu(
     chuong_id: Optional[str] = Query(None, description="ID of chương"),
     demuc_id: Optional[str] = Query(None, description="ID of đề mục"),
 ):
-    """List điều (articles) for a chương or đề mục"""
+    """List điều (articles) for a chương or đề mục.
+
+    Mỗi item có thêm trường `is_muc` (bool):
+    - True  → đây là dòng tiêu đề Mục (Mục 1, Mục 2...), dùng để nhóm các điều bên dưới
+    - False → điều luật thông thường
+    """
     if chuong_id:
         rows = query_all(
             "SELECT mapc, ten, chimuc, stt, vbqppl FROM pddieu WHERE chuong_id = %s ORDER BY stt",
@@ -65,6 +70,10 @@ def list_dieu(
         )
     else:
         raise HTTPException(status_code=400, detail="Cần cung cấp chuong_id hoặc demuc_id")
+
+    for row in rows:
+        row["is_muc"] = row["mapc"].endswith("0000000000000000")
+
     return rows
 
 

@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 import traceback
-from app.models.schemas import QueryRequest, QueryResponse, HealthResponse
+from app.models.schemas import QueryRequest, QueryResponse, HealthResponse, ChatTurn
 from app.rag.pipeline import get_rag_pipeline
 from app.core.auth import get_current_user
 from app.utils.db_helpers import save_message, update_conversation_title
-from app.db.database import query_one
+from app.db.database import query_one, query_all
 import app.rag.pipeline as pipeline_module
 import app.rag.llm as llm_module
 
@@ -24,6 +24,20 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
                 status_code=500,
                 detail="RAG pipeline not initialized"
             )
+
+        # Nạp lịch sử hội thoại từ DB (tối đa 3 lượt = 6 messages gần nhất)
+        if request.conversation_id and request.chat_history is None:
+            try:
+                rows = query_all(
+                    "SELECT role, content FROM messages WHERE conversation_id = %s "
+                    "ORDER BY created_at DESC LIMIT 6",
+                    (request.conversation_id,)
+                )
+                if rows:
+                    history = [ChatTurn(role=r["role"], content=r["content"]) for r in reversed(rows)]
+                    request = request.model_copy(update={"chat_history": history})
+            except Exception as hist_err:
+                print(f"Warning: không tải được lịch sử hội thoại: {hist_err}")
 
         response = pipeline.process_query(request)
 

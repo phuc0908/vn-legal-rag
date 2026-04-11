@@ -3,12 +3,19 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
+class ChatTurn(BaseModel):
+    """A single message in conversation history"""
+    role: str  # "user" or "assistant"
+    content: str
+
+
 class QueryRequest(BaseModel):
     """Request model for RAG query"""
     query: str = Field(..., min_length=1, description="User query")
     conversation_id: Optional[str] = Field(None, description="Conversation ID for context")
     top_k: int = Field(5, ge=1, le=20, description="Number of sources to retrieve")
     chu_de_id: Optional[str] = Field(None, description="Filter vectors by topic ID (pdchude.id)")
+    chat_history: Optional[List[ChatTurn]] = Field(None, description="Recent conversation turns for context")
 
 
 class SourceDocument(BaseModel):
