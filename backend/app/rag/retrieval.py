@@ -11,6 +11,26 @@ from sentence_transformers import CrossEncoder
 from app.core.config import settings
 
 
+# ── Shared singletons (embedding model + reranker dùng chung cho mọi RAGSystem) ─
+_shared_embeddings: Optional["HuggingFaceEmbeddings"] = None
+_shared_reranker: Optional["Reranker"] = None
+
+
+def get_shared_embeddings() -> "HuggingFaceEmbeddings":
+    global _shared_embeddings
+    if _shared_embeddings is None:
+        print(f"[EMBED] Tải embedding model: {settings.EMBEDDING_MODEL}")
+        _shared_embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
+    return _shared_embeddings
+
+
+def get_shared_reranker() -> Optional["Reranker"]:
+    global _shared_reranker
+    if _shared_reranker is None and settings.RERANKER_ENABLED:
+        _shared_reranker = Reranker(settings.RERANKER_MODEL)
+    return _shared_reranker
+
+
 class BaseVectorStore(ABC):
     """Abstract base class for vector stores"""
 
@@ -26,17 +46,16 @@ class BaseVectorStore(ABC):
     def delete(self, ids: List[str]) -> bool:
         pass
 
+
 class ChromaVectorStore(BaseVectorStore):
     """Chroma vector store implementation"""
 
-    def __init__(self):
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=settings.EMBEDDING_MODEL
-        )
-        chroma_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+    def __init__(self, chroma_path: str = None):
+        self.embeddings = get_shared_embeddings()
+        resolved_path = chroma_path or os.getenv("CHROMA_DB_PATH", "./chroma_db")
         self.vectorstore = Chroma(
             embedding_function=self.embeddings,
-            persist_directory=chroma_path
+            persist_directory=resolved_path
         )
 
     def add_documents(self, documents: List[str], metadatas: List[Dict], ids: List[str] = None):
@@ -264,33 +283,34 @@ class Reranker:
 class RAGSystem:
     """Retrieval Augmented Generation system"""
 
-    def __init__(self):
-        self.vector_store = self._init_vector_store()
-        self.reranker = Reranker(settings.RERANKER_MODEL) if settings.RERANKER_ENABLED else None
-        self.hybrid_retriever: Optional[HybridRetriever] = self._init_hybrid_retriever()
+    def __init__(self, chroma_path: str = None, bm25_path: str = None, label: str = "full"):
+        self.label = label
+        self.vector_store = self._init_vector_store(chroma_path)
+        self.reranker = get_shared_reranker()   # dùng chung — không load lại model
+        self.hybrid_retriever: Optional[HybridRetriever] = self._init_hybrid_retriever(bm25_path)
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
             separators=["\n\n", "\n", " ", ""]
         )
 
-    def _init_vector_store(self) -> BaseVectorStore:
+    def _init_vector_store(self, chroma_path: str = None) -> BaseVectorStore:
         """Initialize vector store"""
         if settings.VECTOR_STORE_TYPE == "chroma":
-            return ChromaVectorStore()
+            return ChromaVectorStore(chroma_path=chroma_path)
         else:
             raise ValueError(f"Unknown vector store type: {settings.VECTOR_STORE_TYPE}")
 
-    def _init_hybrid_retriever(self) -> Optional[HybridRetriever]:
+    def _init_hybrid_retriever(self, bm25_path: str = None) -> Optional[HybridRetriever]:
         """Khởi tạo HybridRetriever nếu HYBRID_SEARCH_ENABLED và index tồn tại."""
         if not settings.HYBRID_SEARCH_ENABLED:
-            print("[HYBRID] Tắt (HYBRID_SEARCH_ENABLED=False) — dùng pure vector search")
+            print(f"[HYBRID:{self.label}] Tắt — dùng pure vector search")
             return None
-        bm25 = BM25Index(settings.BM25_INDEX_PATH)
+        index_path = bm25_path or settings.BM25_INDEX_PATH
+        bm25 = BM25Index(index_path)
         loaded = bm25.load()
         if not loaded:
-            print(f"[HYBRID] Index không tồn tại tại '{settings.BM25_INDEX_PATH}' — fallback về pure vector search")
-            print("[HYBRID] Chạy: python scripts/build_bm25_index.py để build index")
+            print(f"[HYBRID:{self.label}] Index không tồn tại tại '{index_path}' — fallback về pure vector search")
             return None
         return HybridRetriever(self.vector_store, bm25)
 
@@ -347,13 +367,36 @@ class RAGSystem:
         self.vector_store.add_documents(texts, metadatas, ids=ids)
 
 
-# Global RAG instance
+# Global RAG instances
 rag_system = None
+rag_hon_nhan = None
+
+_HON_NHAN_CHROMA = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "chroma_db_hon_nhan",
+)
+_HON_NHAN_BM25 = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "bm25_hon_nhan.pkl",
+)
 
 
 def get_rag_system() -> RAGSystem:
-    """Get or create RAG system instance"""
+    """Get or create full-corpus RAG system instance."""
     global rag_system
     if rag_system is None:
-        rag_system = RAGSystem()
+        rag_system = RAGSystem(label="full")
     return rag_system
+
+
+def get_hon_nhan_rag_system() -> RAGSystem:
+    """Get or create Hôn nhân & Gia đình module RAG system instance."""
+    global rag_hon_nhan
+    if rag_hon_nhan is None:
+        print(f"[RAG:hon_nhan] Khởi tạo module Hôn nhân & Gia đình...")
+        rag_hon_nhan = RAGSystem(
+            chroma_path=_HON_NHAN_CHROMA,
+            bm25_path=_HON_NHAN_BM25,
+            label="hon_nhan",
+        )
+    return rag_hon_nhan

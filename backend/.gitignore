@@ -16,6 +16,7 @@ build/
 .mypy_cache/
 .DS_Store
 chroma_db/
+chroma_db_hon_nhan/
 *.db
 *.sqlite
 .idea/

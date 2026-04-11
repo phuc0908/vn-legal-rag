@@ -4,6 +4,70 @@
   border-top: 1px solid var(--border-color);
 }
 
+/* ── Module selector ───────────────────────────────────────── */
+
+.module-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 860px;
+  margin: 0 auto 6px;
+}
+
+.module-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.module-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.module-pill:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.module-pill--active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.module-pill--active:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+.module-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.module-pill-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.module-pill-label {
+  line-height: 1;
+}
+
 /* ── Topic selector ────────────────────────────────────────── */
 
 .topic-selector-row {

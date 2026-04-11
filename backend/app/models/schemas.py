@@ -16,6 +16,7 @@ class QueryRequest(BaseModel):
     top_k: int = Field(5, ge=1, le=20, description="Number of sources to retrieve")
     chu_de_id: Optional[str] = Field(None, description="Filter vectors by topic ID (pdchude.id)")
     chat_history: Optional[List[ChatTurn]] = Field(None, description="Recent conversation turns for context")
+    module: Optional[str] = Field(None, description="RAG module: None (full corpus) | 'hon_nhan'")
 
 
 class SourceDocument(BaseModel):

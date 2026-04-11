@@ -1,7 +1,7 @@
 import time
 from typing import List, Optional
 from app.models.schemas import QueryRequest, QueryResponse, SourceDocument
-from app.rag.retrieval import get_rag_system
+from app.rag.retrieval import get_rag_system, get_hon_nhan_rag_system
 from app.rag.llm import get_llm_manager, TopicRouter
 from app.core.config import settings
 from app.db.database import query_all
@@ -12,9 +12,18 @@ class RAGPipeline:
     def __init__(self):
         print("[PIPELINE] Khởi tạo RAGPipeline...")
         self.rag_system = get_rag_system()
+        # Pre-warm module hon_nhan: embedding model và reranker đã load rồi,
+        # chỉ cần mở ChromaDB + BM25 mới → rất nhanh, tránh timeout ở request đầu
+        self._hon_nhan_system = get_hon_nhan_rag_system()
         self.llm_manager = get_llm_manager()
         self.topic_router: Optional[TopicRouter] = self._init_topic_router()
         print("[PIPELINE] Sẵn sàng.")
+
+    def _get_rag_for_module(self, module: str):
+        """Trả về RAGSystem phù hợp với module yêu cầu."""
+        if module == "hon_nhan":
+            return self._hon_nhan_system
+        return self.rag_system
 
     def _init_topic_router(self) -> Optional[TopicRouter]:
         """Load topics from DB and initialise the hierarchical topic router."""
@@ -41,7 +50,7 @@ class RAGPipeline:
 
         print(f"\n{sep}")
         print(f"[QUERY] {request.query}")
-        print(f"[QUERY] conversation_id={request.conversation_id} | top_k={request.top_k} | chu_de_id={request.chu_de_id}")
+        print(f"[QUERY] conversation_id={request.conversation_id} | top_k={request.top_k} | chu_de_id={request.chu_de_id} | module={request.module}")
 
         # ── 1. Query rewriting (x) ────────────────────────────────────
         search_query = request.query
@@ -51,27 +60,33 @@ class RAGPipeline:
         #     search_query = self.llm_manager.rewrite_query(request.query, history=request.chat_history)
         #     print(f"[REWRITE] '{request.query}' → '{search_query}' ({time.time()-t_rw:.2f}s)")
 
-        # ── 1.5 Hierarchical topic routing ────────────────────────
+        # ── 1.5 Hierarchical topic routing (bỏ qua khi dùng module riêng) ──
         chu_de_id = request.chu_de_id
-        if not chu_de_id and self.topic_router:
-            print(f"[ROUTER] Đang phân loại chủ đề cho query...")
-            t_rt = time.time()
-            chu_de_id = self.topic_router.route(search_query)
-            print(f"[ROUTER] Hoàn tất sau {time.time()-t_rt:.2f}s → chu_de_id={chu_de_id}")
+        rag = self._get_rag_for_module(request.module)
+        if request.module:
+            # Module chuyên biệt — không cần topic routing, không filter theo chu_de_id
+            print(f"[MODULE] Sử dụng module '{request.module}' — bỏ qua topic router")
+            filter_where = None
+        else:
+            if not chu_de_id and self.topic_router:
+                print(f"[ROUTER] Đang phân loại chủ đề cho query...")
+                t_rt = time.time()
+                chu_de_id = self.topic_router.route(search_query)
+                print(f"[ROUTER] Hoàn tất sau {time.time()-t_rt:.2f}s → chu_de_id={chu_de_id}")
+            filter_where = {"chu_de_id": str(chu_de_id)} if chu_de_id else None
 
         # ── 2. Retrieval ──────────────────────────────────────────
-        print(f"\n[RETRIEVAL] Đang tìm kiếm trong ChromaDB...")
-        filter_where = {"chu_de_id": str(chu_de_id)} if chu_de_id else None
+        print(f"\n[RETRIEVAL] Đang tìm kiếm (module={request.module or 'full'})...")
         t0 = time.time()
-        retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k, filter_where=filter_where, rerank_query=request.query)
+        retrieved_docs = rag.retrieve(search_query, top_k=request.top_k, filter_where=filter_where, rerank_query=request.query)
         retrieval_time = time.time() - t0
         print(f"[RETRIEVAL] Hoàn tất sau {retrieval_time:.2f}s — tìm được {len(retrieved_docs)} đoạn văn bản")
 
-        # Fallback: nếu user đã chọn chủ đề thủ công nhưng không tìm được gì
-        if not retrieved_docs and request.chu_de_id:
+        # Fallback: nếu user đã chọn chủ đề thủ công nhưng không tìm được gì (chỉ full corpus)
+        if not retrieved_docs and request.chu_de_id and not request.module:
             print(f"[RETRIEVAL] Không tìm thấy trong chủ đề ID={request.chu_de_id} — fallback tìm kiếm toàn bộ corpus...")
             t0 = time.time()
-            retrieved_docs = self.rag_system.retrieve(search_query, top_k=request.top_k, filter_where=None, rerank_query=request.query)
+            retrieved_docs = rag.retrieve(search_query, top_k=request.top_k, filter_where=None, rerank_query=request.query)
             print(f"[RETRIEVAL] Fallback hoàn tất sau {time.time()-t0:.2f}s — tìm được {len(retrieved_docs)} đoạn văn bản")
 
         if not retrieved_docs:

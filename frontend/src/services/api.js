@@ -72,7 +72,7 @@ export const deleteConversation = async (conversationId) => {
 
 // ── Chat API ───────────────────────────────────────────────────────────────────
 
-export const sendMessage = async (message, conversationId, chuDeId = null) => {
+export const sendMessage = async (message, conversationId, chuDeId = null, module = null) => {
   try {
     const body = {
       query: message,
@@ -80,6 +80,9 @@ export const sendMessage = async (message, conversationId, chuDeId = null) => {
     }
     if (chuDeId) {
       body.chu_de_id = String(chuDeId)
+    }
+    if (module) {
+      body.module = module
     }
     const response = await apiClient.post('/query', body)
     return response.data

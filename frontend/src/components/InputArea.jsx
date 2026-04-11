@@ -3,12 +3,18 @@ import { sendMessage, getChude } from '../services/api'
 import { useChatStore } from '../store/chatStore'
 import '../styles/InputArea.css'
 
+const MODULES = [
+  { id: null,        label: 'Toàn bộ',              icon: '⚖️' },
+  { id: 'hon_nhan',  label: 'Hôn nhân & Gia đình',  icon: '👨‍👩‍👧' },
+]
+
 export default function InputArea({ conversation, initialQuery = '' }) {
   const [input, setInput] = useState(initialQuery)
   const [loading, setLoading] = useState(false)
   const [chudeList, setChudeList] = useState([])
   const [selectedChudeId, setSelectedChudeId] = useState('')
   const [selectedChudeTen, setSelectedChudeTen] = useState('')
+  const [activeModule, setActiveModule] = useState(null)   // null = full corpus
   const { addMessage, updateTitle } = useChatStore()
 
   useEffect(() => {
@@ -29,6 +35,17 @@ export default function InputArea({ conversation, initialQuery = '' }) {
     setSelectedChudeTen('')
   }
 
+  const handleSelectModule = (moduleId) => {
+    setActiveModule(moduleId)
+    // Khi chọn module chuyên biệt, xóa bộ lọc chủ đề (hai cái loại trừ nhau)
+    if (moduleId !== null) {
+      setSelectedChudeId('')
+      setSelectedChudeTen('')
+    }
+  }
+
+  const activeModuleDef = MODULES.find(m => m.id === activeModule)
+
   const handleSend = async () => {
     if (!input.trim() || !conversation) return
 
@@ -43,7 +60,12 @@ export default function InputArea({ conversation, initialQuery = '' }) {
     setLoading(true)
 
     try {
-      const response = await sendMessage(trimmed, conversation.id, selectedChudeId || null)
+      const response = await sendMessage(
+        trimmed,
+        conversation.id,
+        activeModule ? null : (selectedChudeId || null),
+        activeModule || null,
+      )
       addMessage(conversation.id, {
         role: 'assistant',
         content: response.answer,
@@ -66,43 +88,70 @@ export default function InputArea({ conversation, initialQuery = '' }) {
     }
   }
 
+  const placeholder = activeModule
+    ? `Hỏi về "${activeModuleDef?.label}"... (Enter để gửi)`
+    : selectedChudeTen
+      ? `Hỏi về "${selectedChudeTen}"... (Enter để gửi)`
+      : 'Hỏi về luật pháp Việt Nam... (Enter để gửi, Shift+Enter xuống dòng)'
+
   return (
     <div className="input-area">
-      <div className="topic-selector-row">
-        <span className="topic-label">Chủ đề:</span>
-        <select
-          className={`topic-select${selectedChudeId ? ' topic-select--active' : ''}`}
-          value={selectedChudeId}
-          onChange={handleSelectChude}
-          disabled={loading}
-        >
-          <option value="">Tất cả chủ đề</option>
-          {chudeList.map(c => (
-            <option key={c.id} value={String(c.id)}>{c.ten}</option>
+
+      {/* Module selector */}
+      <div className="module-selector-row">
+        <span className="topic-label">Chế độ:</span>
+        <div className="module-pills">
+          {MODULES.map(m => (
+            <button
+              key={String(m.id)}
+              className={`module-pill${activeModule === m.id ? ' module-pill--active' : ''}`}
+              onClick={() => handleSelectModule(m.id)}
+              disabled={loading}
+              title={m.label}
+            >
+              <span className="module-pill-icon">{m.icon}</span>
+              <span className="module-pill-label">{m.label}</span>
+            </button>
           ))}
-        </select>
-        {selectedChudeId && (
-          <button
-            className="topic-clear-btn"
-            onClick={handleClearChude}
-            title="Xóa bộ lọc chủ đề"
+        </div>
+      </div>
+
+      {/* Chủ đề selector — chỉ hiện khi đang ở chế độ Toàn bộ */}
+      {activeModule === null && (
+        <div className="topic-selector-row">
+          <span className="topic-label">Chủ đề:</span>
+          <select
+            className={`topic-select${selectedChudeId ? ' topic-select--active' : ''}`}
+            value={selectedChudeId}
+            onChange={handleSelectChude}
             disabled={loading}
           >
-            ×
-          </button>
-        )}
-      </div>
+            <option value="">Tất cả chủ đề</option>
+            {chudeList.map(c => (
+              <option key={c.id} value={String(c.id)}>{c.ten}</option>
+            ))}
+          </select>
+          {selectedChudeId && (
+            <button
+              className="topic-clear-btn"
+              onClick={handleClearChude}
+              title="Xóa bộ lọc chủ đề"
+              disabled={loading}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Input */}
       <div className="input-container">
         <textarea
           className="input-field"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            selectedChudeTen
-              ? `Hỏi về "${selectedChudeTen}"... (Enter để gửi)`
-              : 'Hỏi về luật pháp Việt Nam... (Enter để gửi, Shift+Enter xuống dòng)'
-          }
+          placeholder={placeholder}
           disabled={loading}
         />
         <button
