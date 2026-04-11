@@ -28,7 +28,7 @@ async def register(user_in: UserCreate):
                 "INSERT INTO users (username, email, hashed_password, full_name) VALUES (%s, %s, %s, %s)",
                 (user_in.username, user_in.email, hashed_pwd, user_in.full_name)
             )
-            user_id = conn.insert_id()
+            user_id = cur.lastrowid
             conn.commit()
             
     return {"id": user_id, "username": user_in.username, "email": user_in.email, "full_name": user_in.full_name}
