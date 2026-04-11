@@ -1,51 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { getChude, getDemuc, getChuong, getDieuList } from '../services/api'
+import { getChude, getDemuc, getChuong, getMuc, getDieuList } from '../services/api'
 import { useBrowserStore } from '../store/browserStore'
 import '../styles/LawBrowserPage.css'
 
 export default function LawBrowserPage() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const autoSelectDone = useRef(false)
 
-  // Global store states
   const {
-    selectedChude,
-    selectedDemuc,
-    selectedChuong,
-    demucs,
-    chuongs,
-    dieus,
-    resetToChude,
-    resetToDemuc,
-    resetToChuong,
-    setDemucs,
-    setChuongs,
-    setDieus
+    selectedChude, selectedDemuc, selectedChuong, selectedMuc,
+    demucs, chuongs, mucs, dieus,
+    resetToChude, resetToDemuc, resetToChuong, resetToMuc,
+    setDemucs, setChuongs, setMucs, setDieus
   } = useBrowserStore()
 
   const [chudes, setChudes] = useState([])
   const [loadingChude, setLoadingChude] = useState(true)
   const [loadingDemuc, setLoadingDemuc] = useState(false)
   const [loadingChuong, setLoadingChuong] = useState(false)
+  const [loadingMuc, setLoadingMuc] = useState(false)
   const [loadingDieu, setLoadingDieu] = useState(false)
 
-  // Load all chủ đề on mount
   useEffect(() => {
-    getChude()
-      .then(setChudes)
-      .finally(() => setLoadingChude(false))
+    getChude().then(setChudes).finally(() => setLoadingChude(false))
   }, [])
 
-  // Auto-select from URL params (tra ngược từ SavedPage hoặc DieuDetailPage)
+  // Auto-select từ URL params
   useEffect(() => {
     if (autoSelectDone.current || chudes.length === 0) return
     const chudeId = searchParams.get('chude_id')
     if (!chudeId) return
-
     const chude = chudes.find(c => String(c.id) === chudeId)
     if (!chude) return
 
@@ -58,44 +45,56 @@ export default function LawBrowserPage() {
     getDemuc(chude.id).then(demucs => {
       setDemucs(demucs)
       setLoadingDemuc(false)
-
       if (!demucId) return
       const demuc = demucs.find(d => String(d.id) === demucId)
       if (!demuc) return
 
       resetToDemuc(demuc)
       setLoadingChuong(true)
-      getChuong(demuc.id).then(chuongs => {
+      getChuong(demuc.id).then(async chuongs => {
         setChuongs(chuongs)
         setLoadingChuong(false)
-
         if (!chuongId) {
-          // Load điều at demuc level if no chapters
           if (chuongs.length === 0) {
             setLoadingDieu(true)
             getDieuList({ demucId: demuc.id }).then(setDieus).finally(() => setLoadingDieu(false))
           }
           return
         }
-
         const chuong = chuongs.find(c => c.mapc === decodeURIComponent(chuongId))
         if (!chuong) return
-
         resetToChuong(chuong)
-        setLoadingDieu(true)
-        getDieuList({ chuongId: chuong.mapc }).then(setDieus).finally(() => setLoadingDieu(false))
+        await loadMucOrDieu(chuong)
       }).catch(() => setLoadingChuong(false))
     }).catch(() => setLoadingDemuc(false))
   }, [chudes, searchParams])
 
+  // Sau khi chọn chương: fetch mục, nếu có thì hiện cột mục, nếu không thì load điều
+  const loadMucOrDieu = async (chuong) => {
+    setLoadingMuc(true)
+    try {
+      const mucData = await getMuc(chuong.mapc)
+      setMucs(mucData)
+      setLoadingMuc(false)
+      if (mucData.length === 0) {
+        // Không có mục → load điều thẳng
+        setLoadingDieu(true)
+        const dieuData = await getDieuList({ chuongId: chuong.mapc })
+        setDieus(dieuData)
+        setLoadingDieu(false)
+      }
+      // Có mục → chờ user chọn mục
+    } catch {
+      setLoadingMuc(false)
+    }
+  }
+
   const handleSelectChude = async (chude) => {
     if (selectedChude?.id === chude.id) return
     resetToChude(chude)
-    
     setLoadingDemuc(true)
     try {
-      const data = await getDemuc(chude.id)
-      setDemucs(data)
+      setDemucs(await getDemuc(chude.id))
     } finally {
       setLoadingDemuc(false)
     }
@@ -104,20 +103,14 @@ export default function LawBrowserPage() {
   const handleSelectDemuc = async (demuc) => {
     if (selectedDemuc?.id === demuc.id) return
     resetToDemuc(demuc)
-    
     setLoadingChuong(true)
     try {
       const data = await getChuong(demuc.id)
       setChuongs(data)
-      // If no chapters, load articles directly
       if (data.length === 0) {
         setLoadingDieu(true)
-        try {
-          const dieuData = await getDieuList({ demucId: demuc.id })
-          setDieus(dieuData)
-        } finally {
-          setLoadingDieu(false)
-        }
+        setDieus(await getDieuList({ demucId: demuc.id }))
+        setLoadingDieu(false)
       }
     } finally {
       setLoadingChuong(false)
@@ -127,15 +120,22 @@ export default function LawBrowserPage() {
   const handleSelectChuong = async (chuong) => {
     if (selectedChuong?.mapc === chuong.mapc) return
     resetToChuong(chuong)
-    
+    await loadMucOrDieu(chuong)
+  }
+
+  const handleSelectMuc = async (muc) => {
+    if (selectedMuc?.mapc === muc.mapc) return
+    resetToMuc(muc)
     setLoadingDieu(true)
     try {
-      const data = await getDieuList({ chuongId: chuong.mapc })
-      setDieus(data)
+      setDieus(await getDieuList({ mucId: muc.mapc }))
     } finally {
       setLoadingDieu(false)
     }
   }
+
+  // Có hiện cột Mục không: khi chương đã chọn VÀ (đang load mục hoặc có mục)
+  const showMucCol = selectedChuong && (loadingMuc || mucs.length > 0)
 
   return (
     <div className="law-browser-page">
@@ -153,6 +153,7 @@ export default function LawBrowserPage() {
       </div>
 
       <div className="browser-layout">
+
         {/* Column 1: Chủ đề */}
         <div className="browser-col">
           <div className="col-header">
@@ -239,12 +240,40 @@ export default function LawBrowserPage() {
           </div>
         </div>
 
-        {/* Column 4: Điều */}
+        {/* Column 4: Mục (chỉ hiện khi chương có mục) */}
+        {showMucCol && (
+          <div className="browser-col">
+            <div className="col-header">
+              <span className="col-icon">🗂️</span>
+              <span>Mục</span>
+              {mucs.length > 0 && <span className="col-count">{mucs.length}</span>}
+            </div>
+            <div className="col-body">
+              {loadingMuc ? (
+                <div className="col-loading">Đang tải...</div>
+              ) : (
+                mucs.map((m) => (
+                  <button
+                    key={m.mapc}
+                    className={`tree-item ${selectedMuc?.mapc === m.mapc ? 'active' : ''}`}
+                    onClick={() => handleSelectMuc(m)}
+                  >
+                    <span className="item-chimuc">{m.chimuc}</span>
+                    <span className="item-text">{m.ten}</span>
+                    <span className="item-arrow">›</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Column cuối: Điều luật */}
         <div className="browser-col browser-col-dieu">
           <div className="col-header">
             <span className="col-icon">📄</span>
             <span>Điều luật</span>
-            {dieus.length > 0 && <span className="col-count">{dieus.filter(d => !d.is_muc).length}</span>}
+            {dieus.length > 0 && <span className="col-count">{dieus.length}</span>}
           </div>
           <div className="col-body">
             {!selectedDemuc ? (
@@ -252,32 +281,29 @@ export default function LawBrowserPage() {
             ) : loadingDieu ? (
               <div className="col-loading">Đang tải...</div>
             ) : dieus.length === 0 ? (
-              selectedChuong || chuongs.length === 0 ? (
+              showMucCol && !selectedMuc ? (
+                <div className="col-empty">← Chọn mục</div>
+              ) : selectedChuong || chuongs.length === 0 ? (
                 <div className="col-empty">Không có điều luật</div>
               ) : (
                 <div className="col-empty">← Chọn chương</div>
               )
             ) : (
-              dieus.map((d) =>
-                d.is_muc ? (
-                  <div key={d.mapc} className="muc-header">
-                    <span className="muc-label">{d.ten}</span>
-                  </div>
-                ) : (
-                  <Link
-                    key={d.mapc}
-                    to={`/phap-dien/dieu/${encodeURIComponent(d.mapc)}`}
-                    className="dieu-item"
-                  >
-                    <span className="dieu-num">Điều {d.chimuc}</span>
-                    <span className="dieu-text">{d.ten}</span>
-                    {d.vbqppl && <span className="dieu-vb">{d.vbqppl}</span>}
-                  </Link>
-                )
-              )
+              dieus.map((d) => (
+                <Link
+                  key={d.mapc}
+                  to={`/phap-dien/dieu/${encodeURIComponent(d.mapc)}`}
+                  className="dieu-item"
+                >
+                  <span className="dieu-num">Điều {d.chimuc}</span>
+                  <span className="dieu-text">{d.ten}</span>
+                  {d.vbqppl && <span className="dieu-vb">{d.vbqppl}</span>}
+                </Link>
+              ))
             )}
           </div>
         </div>
+
       </div>
 
       <Footer />

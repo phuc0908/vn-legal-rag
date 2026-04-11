@@ -40,11 +40,11 @@
 
 /* ── Layout ─────────────────────────────── */
 .browser-layout {
-  display: grid;
-  grid-template-columns: 240px 240px 240px 1fr;
-  gap: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
   flex: 1;
-  max-width: 1400px;
+  max-width: 1600px;
   width: 100%;
   margin: 24px auto;
   padding: 0 24px 40px;
@@ -57,14 +57,17 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  margin-right: 12px;
   height: calc(100vh - 260px);
   display: flex;
   flex-direction: column;
+  flex: 0 0 220px;   /* cố định 220px, không co giãn */
+  min-width: 0;
 }
 
+/* Cột Điều luật chiếm hết phần còn lại */
 .browser-col-dieu {
-  margin-right: 0;
+  flex: 1 1 0;
+  min-width: 200px;
 }
 
 .col-header {
@@ -205,6 +208,38 @@
   margin-top: 1px;
 }
 
+/* ── Mục header ────────────────────────────────────── */
+.muc-header {
+  padding: 6px 14px;
+  background: #f0f4ff;
+  border-bottom: 1px solid #dbeafe;
+  border-top: 2px solid #3b82f6;
+  margin-top: 4px;
+}
+
+.muc-header:first-child {
+  margin-top: 0;
+  border-top: none;
+}
+
+.muc-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+[data-theme="dark"] .muc-header {
+  background: var(--bg-hover);
+  border-bottom-color: var(--border-color);
+  border-top-color: var(--accent);
+}
+
+[data-theme="dark"] .muc-label {
+  color: var(--accent);
+}
+
 /* ── Scrollbar styling ─────────────────────────────── */
 .col-body::-webkit-scrollbar {
   width: 4px;
@@ -222,26 +257,34 @@
 /* ── Responsive ─────────────────────────────── */
 @media (max-width: 1024px) {
   .browser-layout {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
+    flex-wrap: wrap;
   }
 
   .browser-col {
+    flex: 1 1 calc(50% - 6px);
     height: 300px;
-    margin-right: 0;
-    margin-bottom: 12px;
   }
 
   .browser-col-dieu {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
     height: 400px;
   }
 }
 
 @media (max-width: 640px) {
   .browser-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     padding: 0 12px 32px;
+  }
+
+  .browser-col {
+    flex: none;
+    width: 100%;
+    height: 260px;
+  }
+
+  .browser-col-dieu {
+    height: 400px;
   }
 
   .browser-hero {

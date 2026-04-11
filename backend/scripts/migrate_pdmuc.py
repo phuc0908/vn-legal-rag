@@ -40,8 +40,8 @@ def run(apply: bool):
             print("[1] Tạo bảng pdmuc (nếu chưa có)...")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS pdmuc (
-                    mapc        VARCHAR(40)  NOT NULL PRIMARY KEY,
-                    chuong_id   VARCHAR(40)  NOT NULL,
+                    mapc        VARCHAR(128) NOT NULL PRIMARY KEY,
+                    chuong_id   VARCHAR(128) NOT NULL,
                     chimuc      INT          NOT NULL,
                     ten         VARCHAR(50)  NOT NULL,
                     stt         INT          NOT NULL DEFAULT 0,
@@ -49,8 +49,11 @@ def run(apply: bool):
                 ) CHARACTER SET utf8mb4
             """)
             if apply:
+                # Đảm bảo cột mapc đủ rộng (có thể bảng tồn tại với VARCHAR(40) cũ)
+                cur.execute("ALTER TABLE pdmuc MODIFY COLUMN mapc VARCHAR(128) NOT NULL")
+                cur.execute("ALTER TABLE pdmuc MODIFY COLUMN chuong_id VARCHAR(128) NOT NULL")
                 conn.commit()
-                print("   → Bảng pdmuc đã tạo/tồn tại.")
+                print("   → Bảng pdmuc đã tạo/tồn tại, cột mapc mở rộng lên VARCHAR(128).")
 
             # ── 2. Lấy tất cả Mục rows từ pddieu ──────────────────────────
             print("[2] Đọc Mục rows từ pddieu...")
@@ -72,16 +75,24 @@ def run(apply: bool):
             # ── 3. Thêm cột muc_id vào pddieu (nếu chưa có) ──────────────
             print("[3] Thêm cột muc_id vào pddieu (nếu chưa có)...")
             cur.execute("SHOW COLUMNS FROM pddieu LIKE 'muc_id'")
-            if not cur.fetchone():
+            col = cur.fetchone()
+            if not col:
                 if apply:
-                    cur.execute("ALTER TABLE pddieu ADD COLUMN muc_id VARCHAR(40) NULL DEFAULT NULL")
+                    cur.execute("ALTER TABLE pddieu ADD COLUMN muc_id VARCHAR(128) NULL DEFAULT NULL")
                     cur.execute("ALTER TABLE pddieu ADD INDEX idx_muc (muc_id)")
                     conn.commit()
-                    print("   → Đã thêm cột muc_id và index.")
+                    print("   → Đã thêm cột muc_id VARCHAR(128) và index.")
                 else:
                     print("   [DRY RUN] Sẽ thêm cột muc_id vào pddieu.")
             else:
-                print("   → Cột muc_id đã tồn tại, bỏ qua.")
+                # Mở rộng nếu cột cũ nhỏ hơn VARCHAR(128)
+                col_type = col.get("Type", "")
+                if apply and "128" not in col_type:
+                    cur.execute("ALTER TABLE pddieu MODIFY COLUMN muc_id VARCHAR(128) NULL DEFAULT NULL")
+                    conn.commit()
+                    print(f"   → Cột muc_id mở rộng từ {col_type} → VARCHAR(128).")
+                else:
+                    print(f"   → Cột muc_id đã tồn tại ({col_type}), bỏ qua.")
 
             # ── 4. Insert vào pdmuc ────────────────────────────────────────
             print("[4] Insert dữ liệu vào pdmuc...")
@@ -136,36 +147,38 @@ def run(apply: bool):
                 conn.commit()
             print(f"   → Đã cập nhật muc_id cho {updated} điều.")
 
-            # ── 6. Xóa Mục header rows khỏi pddieu ───────────────────────
+            # ── 6. Đánh dấu Mục header rows bằng muc_id = chính nó ──────
+            # Không xóa vì có foreign key từ pdmuclienquan.
+            # Thay vào đó: API dùng điều kiện muc_id IS NULL để lọc ra điều thực sự.
             if apply:
-                print("[6] Xóa Mục header rows khỏi pddieu...")
+                print("[6] Đánh dấu Mục header rows (muc_id = mapc của chính nó)...")
                 cur.execute("""
-                    DELETE FROM pddieu
+                    UPDATE pddieu
+                    SET muc_id = mapc
                     WHERE RIGHT(mapc, 14) = '00000000000000'
                       AND SUBSTRING(mapc, 21, 6) != '000000'
                       AND ten LIKE 'M_c%'
                 """)
-                deleted = cur.rowcount
+                marked = cur.rowcount
                 conn.commit()
-                print(f"   → Đã xóa {deleted} Mục header rows khỏi pddieu.")
+                print(f"   → Đã đánh dấu {marked} Mục header rows.")
             else:
-                print(f"[6] [DRY RUN] Sẽ xóa {len(muc_rows)} Mục header rows khỏi pddieu.")
+                print(f"[6] [DRY RUN] Sẽ đánh dấu {len(muc_rows)} Mục header rows.")
 
             # ── Tổng kết ──────────────────────────────────────────────────
             print()
             if apply:
                 print("✓ Migration hoàn tất!")
-                print(f"  - pdmuc: {inserted} mục")
+                print(f"  - pdmuc: {inserted if inserted else len(muc_rows)} mục (đã có hoặc vừa insert)")
                 print(f"  - pddieu.muc_id: {updated} điều được gán mục")
-                print(f"  - pddieu: xóa {len(muc_rows)} header rows")
+                print(f"  - pddieu: {len(muc_rows)} Mục header rows được đánh dấu (không xóa do FK constraint)")
                 print()
-                print("Cần rebuild BM25 index sau migration:")
-                print("  python scripts/build_bm25_index.py --reset")
+                print("API lọc điều thực sự bằng: WHERE muc_id != mapc (hoặc is_muc flag)")
             else:
                 print("=== DRY RUN — không thay đổi DB ===")
-                print(f"  Sẽ tạo bảng pdmuc với {inserted} mục")
+                print(f"  Sẽ tạo pdmuc với {inserted} mục")
                 print(f"  Sẽ cập nhật muc_id cho {updated} điều")
-                print(f"  Sẽ xóa {len(muc_rows)} Mục header rows khỏi pddieu")
+                print(f"  Sẽ đánh dấu {len(muc_rows)} Mục header rows")
                 print()
                 print("Chạy lại với --apply để thực hiện:")
                 print("  python scripts/migrate_pdmuc.py --apply")

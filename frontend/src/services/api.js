@@ -156,11 +156,17 @@ export const getChuong = async (demucId) => {
   return response.data
 }
 
-export const getDieuList = async ({ chuongId, demucId }) => {
+export const getDieuList = async ({ chuongId, demucId, mucId }) => {
   const params = {}
   if (chuongId) params.chuong_id = chuongId
   if (demucId) params.demuc_id = demucId
+  if (mucId) params.muc_id = mucId
   const response = await apiClient.get('/law/dieu/list', { params })
+  return response.data
+}
+
+export const getMuc = async (chuongId) => {
+  const response = await apiClient.get('/law/muc', { params: { chuong_id: chuongId } })
   return response.data
 }
 

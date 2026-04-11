@@ -47,32 +47,59 @@ def list_chuong(demuc_id: str = Query(..., description="ID of đề mục")):
     return rows
 
 
+@router.get("/muc")
+def list_muc(chuong_id: str = Query(..., description="ID of chương")):
+    """List các mục trong một chương (nếu có)."""
+    rows = query_all(
+        "SELECT mapc, ten, chimuc, stt FROM pdmuc WHERE chuong_id = %s ORDER BY stt",
+        (chuong_id,),
+    )
+    return rows
+
+
 @router.get("/dieu/list")
 def list_dieu(
     chuong_id: Optional[str] = Query(None, description="ID of chương"),
     demuc_id: Optional[str] = Query(None, description="ID of đề mục"),
+    muc_id: Optional[str] = Query(None, description="ID of mục"),
 ):
-    """List điều (articles) for a chương or đề mục.
+    """List điều (articles) cho chương, đề mục, hoặc mục cụ thể.
 
-    Mỗi item có thêm trường `is_muc` (bool):
-    - True  → đây là dòng tiêu đề Mục (Mục 1, Mục 2...), dùng để nhóm các điều bên dưới
-    - False → điều luật thông thường
+    Kết quả chỉ trả về điều thực sự (loại bỏ Mục header rows).
+    Mỗi item có thêm `muc_ten` (tên mục nếu có) để frontend nhóm hiển thị.
     """
-    if chuong_id:
+    if muc_id:
         rows = query_all(
-            "SELECT mapc, ten, chimuc, stt, vbqppl FROM pddieu WHERE chuong_id = %s ORDER BY stt",
+            """SELECT d.mapc, d.ten, d.chimuc, d.stt, d.vbqppl, d.muc_id,
+                      m.ten as muc_ten, m.chimuc as muc_chimuc
+               FROM pddieu d
+               LEFT JOIN pdmuc m ON d.muc_id = m.mapc
+               WHERE d.muc_id = %s AND d.muc_id != d.mapc
+               ORDER BY d.stt""",
+            (muc_id,),
+        )
+    elif chuong_id:
+        rows = query_all(
+            """SELECT d.mapc, d.ten, d.chimuc, d.stt, d.vbqppl, d.muc_id,
+                      m.ten as muc_ten, m.chimuc as muc_chimuc
+               FROM pddieu d
+               LEFT JOIN pdmuc m ON d.muc_id = m.mapc
+               WHERE d.chuong_id = %s AND (d.muc_id IS NULL OR d.muc_id != d.mapc)
+               ORDER BY d.stt""",
             (chuong_id,),
         )
     elif demuc_id:
         rows = query_all(
-            "SELECT mapc, ten, chimuc, stt, vbqppl FROM pddieu WHERE demuc_id = %s ORDER BY stt",
+            """SELECT d.mapc, d.ten, d.chimuc, d.stt, d.vbqppl, d.muc_id,
+                      m.ten as muc_ten, m.chimuc as muc_chimuc
+               FROM pddieu d
+               LEFT JOIN pdmuc m ON d.muc_id = m.mapc
+               WHERE d.demuc_id = %s AND (d.muc_id IS NULL OR d.muc_id != d.mapc)
+               ORDER BY d.stt""",
             (demuc_id,),
         )
     else:
-        raise HTTPException(status_code=400, detail="Cần cung cấp chuong_id hoặc demuc_id")
-
-    for row in rows:
-        row["is_muc"] = row["mapc"].endswith("0000000000000000")
+        raise HTTPException(status_code=400, detail="Cần cung cấp chuong_id, demuc_id hoặc muc_id")
 
     return rows
 
