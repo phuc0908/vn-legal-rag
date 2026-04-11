@@ -5,3 +5,6 @@ notebooks/
 p2p.md
 backend/tests/report.html
 docs
+backend/scripts/generate_report.py
+backend/scripts/diagnose_hit.py
+backend/scripts/eval_ablation.py
