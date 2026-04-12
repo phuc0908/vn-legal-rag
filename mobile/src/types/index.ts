@@ -120,6 +120,29 @@ export type MainTabParamList = {
   SearchTab: { q?: string }
   ChatTab: undefined
   LawTab: undefined
+  SavedTab: undefined
+}
+
+// ── Bookmark / History ────────────────────────────────────────────────────────
+
+export interface BookmarkItem {
+  mapc: string
+  ten: string
+  chimuc: string
+  chude_id?: number
+  chude_ten?: string
+  demuc_id?: number
+  demuc_ten?: string
+  chuong_id?: string
+  chuong_ten?: string
+  chuong_chimuc?: string
+  vbqppl?: string
+  created_at?: string
+}
+
+export interface HistoryItem extends BookmarkItem {
+  viewed_at?: string
+  viewedAt?: string
 }
 
 export type LawStackParamList = {
