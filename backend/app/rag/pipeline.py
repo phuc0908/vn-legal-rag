@@ -12,8 +12,7 @@ class RAGPipeline:
     def __init__(self):
         print("[PIPELINE] Khởi tạo RAGPipeline...")
         self.rag_system = get_rag_system()
-        # Pre-warm module hon_nhan: embedding model và reranker đã load rồi,
-        # chỉ cần mở ChromaDB + BM25 mới → rất nhanh, tránh timeout ở request đầu
+        # Pre-warm module hon_nhan: embedding model và reranker,
         self._hon_nhan_system = get_hon_nhan_rag_system()
         self.llm_manager = get_llm_manager()
         self.topic_router: Optional[TopicRouter] = self._init_topic_router()
