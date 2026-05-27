@@ -61,11 +61,11 @@ export default function MessageItem({ message }: Props) {
 
 const markdownStyles = {
   body: { color: Colors.text, fontSize: 14, lineHeight: 20 },
-  heading1: { fontSize: 18, fontWeight: '800', color: Colors.dark, marginBottom: 6 },
-  heading2: { fontSize: 16, fontWeight: '700', color: Colors.dark, marginBottom: 4 },
-  heading3: { fontSize: 14, fontWeight: '700', color: Colors.dark, marginBottom: 4 },
-  strong: { fontWeight: '700', color: Colors.dark },
-  em: { fontStyle: 'italic' },
+  heading1: { fontSize: 18, fontWeight: '800' as const, color: Colors.dark, marginBottom: 6 },
+  heading2: { fontSize: 16, fontWeight: '700' as const, color: Colors.dark, marginBottom: 4 },
+  heading3: { fontSize: 14, fontWeight: '700' as const, color: Colors.dark, marginBottom: 4 },
+  strong: { fontWeight: '700' as const, color: Colors.dark },
+  em: { fontStyle: 'italic' as const },
   bullet_list: { marginLeft: 8 },
   ordered_list: { marginLeft: 8 },
   list_item: { marginBottom: 4, fontSize: 14, color: Colors.text },

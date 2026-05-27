@@ -14,6 +14,7 @@ import SearchScreen from '../screens/SearchScreen'
 import ChatScreen from '../screens/ChatScreen'
 import LawBrowserScreen from '../screens/LawBrowserScreen'
 import DieuDetailScreen from '../screens/DieuDetailScreen'
+import SavedScreen from '../screens/SavedScreen'
 
 import type {
   RootStackParamList,
@@ -32,6 +33,7 @@ const LawStack = createLawStack<LawStackParamList>()
 function LawNavigator() {
   return (
     <LawStack.Navigator
+      id="LawStack"
       screenOptions={{
         headerStyle: { backgroundColor: Colors.primary },
         headerTintColor: '#fff',
@@ -77,6 +79,7 @@ function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focu
 function MainNavigator() {
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
@@ -125,6 +128,15 @@ function MainNavigator() {
           ),
         }}
       />
+      <Tab.Screen
+        name="SavedTab"
+        component={SavedScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="★" label="Đã lưu" focused={focused} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   )
 }
@@ -134,7 +146,7 @@ function MainNavigator() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
         <RootStack.Screen name="Main" component={MainNavigator} />
         <RootStack.Screen
           name="Login"

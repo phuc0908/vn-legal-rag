@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, FlatList, ActivityIndicator,
+  ScrollView, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -159,6 +159,78 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Pháp điển card */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.phapdienCard}
+            onPress={() => navigation.navigate('LawTab')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.phapdienLeft}>
+              <View style={styles.phapdienBadge}>
+                <Text style={styles.phapdienBadgeText}>Mới</Text>
+              </View>
+              <Text style={styles.phapdienTitle}>Hệ thống Pháp điển</Text>
+              <Text style={styles.phapdienDesc}>
+                Tra cứu toàn bộ văn bản pháp luật Việt Nam theo cấu trúc phân cấp chính thức:
+                Chủ đề → Đề mục → Chương → Điều.
+              </Text>
+              {lawStats && (
+                <View style={styles.phapdienStats}>
+                  <Text style={styles.phapdienStat}><Text style={styles.phapdienStatNum}>{lawStats.chude}</Text> Chủ đề</Text>
+                  <Text style={styles.phapdienStat}><Text style={styles.phapdienStatNum}>{lawStats.demuc}</Text> Đề mục</Text>
+                  <Text style={styles.phapdienStat}><Text style={styles.phapdienStatNum}>{lawStats.chuong}</Text> Chương</Text>
+                  <Text style={styles.phapdienStat}><Text style={styles.phapdienStatNum}>{lawStats.dieu.toLocaleString()}</Text> Điều</Text>
+                </View>
+              )}
+              <View style={styles.phapdienBtn}>
+                <Text style={styles.phapdienBtnText}>Duyệt Pháp điển →</Text>
+              </View>
+            </View>
+            <View style={styles.phapdienRight}>
+              <Text style={styles.ptreeItem}>📂 Chủ đề</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 12 }]}>📋 Đề mục</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 24 }]}>📑 Chương</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 36 }]}>📄 Điều</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tính năng nổi bật */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tính năng nổi bật</Text>
+          <View style={styles.featuresRow}>
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => goSearch('tra cứu pháp luật')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.featureIcon}>🔍</Text>
+              <Text style={styles.featureTitle}>Tra cứu thông minh</Text>
+              <Text style={styles.featureDesc}>Tìm kiếm toàn văn, hiểu ngôn ngữ tự nhiên.</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.featureCard, styles.featureCardFeatured]}
+              onPress={goChat}
+              activeOpacity={0.8}
+            >
+              <View style={styles.featureBadge}><Text style={styles.featureBadgeText}>Nổi bật</Text></View>
+              <Text style={styles.featureIcon}>🤖</Text>
+              <Text style={[styles.featureTitle, { color: '#fff' }]}>Tư vấn AI</Text>
+              <Text style={[styles.featureDesc, { color: 'rgba(255,255,255,0.8)' }]}>Giải thích chi tiết, trích dẫn điều luật.</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.featureCard}
+              onPress={() => navigation.navigate('LawTab')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.featureIcon}>📚</Text>
+              <Text style={styles.featureTitle}>Dữ liệu đầy đủ</Text>
+              <Text style={styles.featureDesc}>Tổng hợp văn bản pháp luật chính thức.</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Common Questions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Câu hỏi thường gặp</Text>
@@ -170,6 +242,17 @@ export default function HomeScreen() {
               <Text style={styles.questionArrow}>→</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* CTA Banner */}
+        <View style={styles.ctaBanner}>
+          <Text style={styles.ctaBannerTitle}>Cần tư vấn pháp lý ngay?</Text>
+          <Text style={styles.ctaBannerDesc}>
+            Trợ lý AI sẵn sàng giải đáp mọi thắc mắc pháp lý của bạn 24/7
+          </Text>
+          <TouchableOpacity style={styles.ctaBannerBtn} onPress={goChat}>
+            <Text style={styles.ctaBannerBtnText}>Bắt đầu tư vấn miễn phí →</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 24 }} />
@@ -310,4 +393,85 @@ const styles = StyleSheet.create({
   questionIcon: { fontSize: 16 },
   questionText: { flex: 1, fontSize: 13, color: Colors.text },
   questionArrow: { fontSize: 16, color: Colors.textMuted },
+
+  // Pháp điển card
+  phapdienCard: {
+    backgroundColor: Colors.dark,
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    gap: 12,
+    overflow: 'hidden',
+  },
+  phapdienLeft: { flex: 1, gap: 8 },
+  phapdienBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  phapdienBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  phapdienTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  phapdienDesc: { fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 17 },
+  phapdienStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  phapdienStat: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
+  phapdienStatNum: { fontWeight: '800', color: '#fff' },
+  phapdienBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+  },
+  phapdienBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  phapdienRight: { justifyContent: 'center', gap: 6 },
+  ptreeItem: { fontSize: 12, color: 'rgba(255,255,255,0.8)' },
+
+  // Features
+  featuresRow: { gap: 10 },
+  featureCard: {
+    backgroundColor: Colors.cardBg,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 4,
+  },
+  featureCardFeatured: {
+    backgroundColor: Colors.dark,
+    borderColor: Colors.dark,
+  },
+  featureBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginBottom: 4,
+  },
+  featureBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  featureIcon: { fontSize: 28, marginBottom: 4 },
+  featureTitle: { fontSize: 14, fontWeight: '800', color: Colors.dark },
+  featureDesc: { fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
+
+  // CTA Banner
+  ctaBanner: {
+    margin: 16,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  ctaBannerTitle: { fontSize: 18, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  ctaBannerDesc: { fontSize: 13, color: 'rgba(255,255,255,0.8)', textAlign: 'center', lineHeight: 18 },
+  ctaBannerBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 4,
+  },
+  ctaBannerBtnText: { color: Colors.primary, fontWeight: '800', fontSize: 14 },
 })

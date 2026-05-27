@@ -148,4 +148,48 @@ export const searchLaw = async (q: string, page = 1, size = 20) => {
   return response.data
 }
 
+// ── Bookmark API ──────────────────────────────────────────────────────────────
+
+export const getBookmarks = async () => {
+  const response = await apiClient.get('/bookmarks/')
+  return response.data
+}
+
+export const toggleBookmark = async (dieuData: Record<string, unknown>) => {
+  const response = await apiClient.post('/bookmarks/toggle', dieuData)
+  return response.data as { bookmarked: boolean }
+}
+
+export const getBookmarkStatus = async (mapc: string) => {
+  const response = await apiClient.get(`/bookmarks/${encodeURIComponent(mapc)}/status`)
+  return response.data as { bookmarked: boolean }
+}
+
+export const removeBookmark = async (mapc: string) => {
+  const response = await apiClient.delete(`/bookmarks/${encodeURIComponent(mapc)}`)
+  return response.data
+}
+
+// ── History API ───────────────────────────────────────────────────────────────
+
+export const getHistory = async () => {
+  const response = await apiClient.get('/history/')
+  return response.data
+}
+
+export const addHistory = async (dieuData: Record<string, unknown>) => {
+  const response = await apiClient.post('/history/', dieuData)
+  return response.data
+}
+
+export const removeHistoryItem = async (mapc: string) => {
+  const response = await apiClient.delete(`/history/${encodeURIComponent(mapc)}`)
+  return response.data
+}
+
+export const clearHistory = async () => {
+  const response = await apiClient.delete('/history/')
+  return response.data
+}
+
 export default apiClient

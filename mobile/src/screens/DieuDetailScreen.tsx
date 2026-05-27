@@ -7,7 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import Markdown from 'react-native-markdown-display'
-import { getDieuDetail } from '../services/api'
+import {
+  getDieuDetail, getBookmarkStatus, toggleBookmark, addHistory,
+} from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
 import { DieuDetail, LawStackParamList } from '../types'
 
@@ -17,19 +20,62 @@ type NavProp = NativeStackNavigationProp<LawStackParamList, 'DieuDetail'>
 export default function DieuDetailScreen() {
   const route = useRoute<Route>()
   const navigation = useNavigation<NavProp>()
+  const { isAuthenticated } = useAuthStore()
   const { mapc } = route.params
 
   const [dieu, setDieu] = useState<DieuDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [bookmarked, setBookmarked] = useState(false)
+  const [bookmarkLoading, setBookmarkLoading] = useState(false)
 
   useEffect(() => {
     setLoading(true)
     getDieuDetail(mapc)
-      .then(setDieu)
+      .then((data) => {
+        setDieu(data)
+        // Record view history
+        if (isAuthenticated) {
+          addHistory({
+            mapc: data.mapc,
+            ten: data.ten,
+            chimuc: data.chimuc,
+            chude_ten: data.chude_ten,
+            demuc_ten: data.demuc_ten,
+            chuong_ten: data.chuong_ten,
+            vbqppl: data.vbqppl,
+          }).catch(() => {})
+        }
+      })
       .catch(() => setError('Không thể tải nội dung điều luật.'))
       .finally(() => setLoading(false))
   }, [mapc])
+
+  useEffect(() => {
+    if (isAuthenticated && mapc) {
+      getBookmarkStatus(mapc)
+        .then((res) => setBookmarked(res.bookmarked))
+        .catch(() => {})
+    }
+  }, [mapc, isAuthenticated])
+
+  const handleToggleBookmark = async () => {
+    if (!isAuthenticated || !dieu) return
+    setBookmarkLoading(true)
+    try {
+      const res = await toggleBookmark({
+        mapc: dieu.mapc,
+        ten: dieu.ten,
+        chimuc: dieu.chimuc,
+        chude_ten: dieu.chude_ten,
+        demuc_ten: dieu.demuc_ten,
+        chuong_ten: dieu.chuong_ten,
+        vbqppl: dieu.vbqppl,
+      })
+      setBookmarked(res.bookmarked)
+    } catch {}
+    finally { setBookmarkLoading(false) }
+  }
 
   if (loading) {
     return (
@@ -59,6 +105,30 @@ export default function DieuDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
+      {/* Bookmark action bar */}
+      {isAuthenticated && (
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={[styles.bookmarkBtn, bookmarked && styles.bookmarkBtnActive]}
+            onPress={handleToggleBookmark}
+            disabled={bookmarkLoading}
+          >
+            {bookmarkLoading ? (
+              <ActivityIndicator size="small" color={bookmarked ? '#fff' : Colors.primary} />
+            ) : (
+              <>
+                <Text style={[styles.bookmarkIcon, bookmarked && styles.bookmarkIconActive]}>
+                  {bookmarked ? '★' : '☆'}
+                </Text>
+                <Text style={[styles.bookmarkText, bookmarked && styles.bookmarkTextActive]}>
+                  {bookmarked ? 'Đã lưu' : 'Lưu lại'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Metadata card */}
         <View style={styles.metaCard}>
@@ -150,9 +220,9 @@ export default function DieuDetailScreen() {
 const markdownStyles = {
   body: { color: Colors.text, fontSize: 14, lineHeight: 22 },
   paragraph: { marginBottom: 10, fontSize: 14, color: Colors.text, lineHeight: 22 },
-  strong: { fontWeight: '700', color: Colors.dark },
-  heading1: { fontSize: 16, fontWeight: '800', color: Colors.dark, marginBottom: 8 },
-  heading2: { fontSize: 15, fontWeight: '700', color: Colors.dark, marginBottom: 6 },
+  strong: { fontWeight: '700' as const, color: Colors.dark },
+  heading1: { fontSize: 16, fontWeight: '800' as const, color: Colors.dark, marginBottom: 8 },
+  heading2: { fontSize: 15, fontWeight: '700' as const, color: Colors.dark, marginBottom: 6 },
   bullet_list: { marginLeft: 12 },
   ordered_list: { marginLeft: 12 },
   list_item: { marginBottom: 6, fontSize: 14, color: Colors.text },
@@ -165,6 +235,34 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, color: Colors.textMuted },
   errorEmoji: { fontSize: 48, marginBottom: 12 },
   errorText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center' },
+
+  actionBar: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  bookmarkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: '#fff',
+  },
+  bookmarkBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  bookmarkIcon: { fontSize: 16, color: Colors.primary },
+  bookmarkIconActive: { color: '#fff' },
+  bookmarkText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  bookmarkTextActive: { color: '#fff' },
 
   metaCard: {
     backgroundColor: Colors.cardBg,
