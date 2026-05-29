@@ -14,7 +14,7 @@ export default function MessageItem({ message }) {
         ) : (
           <ReactMarkdown>{message.content}</ReactMarkdown>
         )}
-        {message.sources && (
+        {message.sources && message.sources.length > 0 && (
           <div className="message-sources">
             <h4>Nguồn tham khảo:</h4>
             <ul>
