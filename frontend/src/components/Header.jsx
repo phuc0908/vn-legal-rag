@@ -56,7 +56,12 @@ export default function Header() {
           </Link>
           {isAuthenticated ? (
             <div className="user-profile">
-              <span className="user-name">Chào, {user?.full_name || user?.username}</span>
+              <Link
+                to="/ho-so"
+                className={`user-name ${location.pathname.startsWith('/ho-so') ? 'active' : ''}`}
+              >
+                {user?.full_name || user?.username}
+              </Link>
               <button className="logout-btn" onClick={logout}>Đăng xuất</button>
             </div>
           ) : (

@@ -53,6 +53,28 @@ export const getMe = async () => {
   return response.data
 }
 
+export const updateProfile = async (data) => {
+  const response = await apiClient.put('/auth/me', data)
+  return response.data
+}
+
+export const uploadAvatar = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await apiClient.post('/auth/me/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data
+}
+
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await apiClient.put('/auth/me/password', {
+    current_password: currentPassword,
+    new_password: newPassword,
+  })
+  return response.data
+}
+
 // ── Conversation API ──────────────────────────────────────────────────────────
 
 export const getUserConversations = async () => {

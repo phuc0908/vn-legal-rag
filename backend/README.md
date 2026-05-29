@@ -189,4 +189,8 @@ curl -X POST http://localhost:8000/api/query \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"query": "Thủ tục ly hôn?", "top_k": 5, "chu_de_id": "3"}'
+  
 ```
+
+
+

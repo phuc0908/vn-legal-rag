@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api.routes import router as api_router
 from app.api.law_routes import router as law_router
@@ -9,8 +10,27 @@ from app.api.auth_routes import router as auth_router
 from app.api.conversation_routes import router as conv_router
 from app.api.bookmark_routes import router as bookmark_router
 from app.api.history_routes import router as history_router
+from app.db.database import get_db
 import uvicorn
 import os
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("ALTER TABLE users ADD COLUMN avatar_url MEDIUMTEXT NULL")
+                conn.commit()
+    except Exception:
+        # Column exists — upgrade VARCHAR(500) → MEDIUMTEXT if needed
+        try:
+            with get_db() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("ALTER TABLE users MODIFY COLUMN avatar_url MEDIUMTEXT NULL")
+                    conn.commit()
+        except Exception:
+            pass
+    yield
 
 
 # Create FastAPI app
@@ -18,7 +38,9 @@ app = FastAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
     debug=settings.DEBUG,
+    lifespan=lifespan,
 )
+
 
 # Add CORS middleware
 app.add_middleware(

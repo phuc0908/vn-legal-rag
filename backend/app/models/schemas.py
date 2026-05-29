@@ -95,9 +95,18 @@ class UserOut(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
-    
+    avatar_url: Optional[str] = None
+
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
 
 # Conversation Schemas
 class MessageOut(BaseModel):
