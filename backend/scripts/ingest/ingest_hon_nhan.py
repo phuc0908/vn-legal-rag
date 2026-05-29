@@ -240,8 +240,8 @@ def export_json(chunks: list[dict]):
 
 def ingest(chunks: list[dict]):
     """Embed và lưu vào chroma_db_hon_nhan/."""
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-    from langchain_community.vectorstores import Chroma
+    from langchain_community.embeddings import HuggingFaceEmbeddings # type: ignore
+    from langchain_community.vectorstores import Chroma # type: ignore
     from app.core.config import settings
 
     log(f"Khởi tạo embedding model: {settings.EMBEDDING_MODEL}")

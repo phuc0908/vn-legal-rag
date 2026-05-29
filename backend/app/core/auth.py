@@ -40,7 +40,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except Exception:
         raise credentials_exception
         
-    user = query_one("SELECT id, username, full_name, is_active FROM users WHERE username = %s", (username,))
+    user = query_one("SELECT id, username, email, full_name, avatar_url, is_active FROM users WHERE username = %s", (username,))
     if user is None:
         raise credentials_exception
     return user

@@ -46,6 +46,16 @@
   font-size: 14px;
   font-weight: 600;
   color: #334155;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.user-name:hover,
+.user-name.active {
+  color: var(--accent, #c0392b);
+  background: var(--accent-light, #fdf0ef);
 }
 
 .logout-btn {
