@@ -58,6 +58,35 @@
   background: var(--accent-light, #fdf0ef);
 }
 
+.admin-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.admin-link:hover,
+.admin-link.active {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
+[data-theme="dark"] .admin-link {
+  background: #451a03;
+  color: #fcd34d;
+  border-color: #78350f;
+}
+
+[data-theme="dark"] .admin-link:hover,
+[data-theme="dark"] .admin-link.active {
+  background: #78350f;
+}
+
 .logout-btn {
   background: #f1f5f9;
   border: none;

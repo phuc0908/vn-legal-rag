@@ -13,11 +13,11 @@ _DEFAULT_TITLE = "Cuộc trò chuyện mới"
 
 @router.get("/", response_model=List[ConversationOut])
 async def get_user_conversations(current_user: dict = Depends(get_current_user)):
-    convs = query_all("SELECT * FROM conversations WHERE user_id = %s ORDER BY created_at DESC", (current_user["id"],))
+    convs = query_all("SELECT * FROM conversations WHERE user_id = %s AND is_deleted = 0 ORDER BY created_at DESC", (current_user["id"],))
 
     results = []
     for conv in convs:
-        messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at ASC", (conv["id"],))
+        messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s AND is_deleted = 0 ORDER BY created_at ASC", (conv["id"],))
         conv["messages"] = messages
 
         # Nếu title vẫn là mặc định nhưng đã có messages → derive từ tin nhắn user đầu tiên
@@ -58,23 +58,20 @@ async def get_conversation_detail(conversation_id: str, current_user: dict = Dep
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
         
-    messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at ASC", (conversation_id,))
+    messages = query_all("SELECT role, content, created_at FROM messages WHERE conversation_id = %s AND is_deleted = 0 ORDER BY created_at ASC", (conversation_id,))
     conv["messages"] = messages
     return conv
 
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(conversation_id: str, current_user: dict = Depends(get_current_user)):
-    # Check ownership
-    conv = query_one("SELECT id FROM conversations WHERE id = %s AND user_id = %s", (conversation_id, current_user["id"]))
+    conv = query_one("SELECT id FROM conversations WHERE id = %s AND user_id = %s AND is_deleted = 0", (conversation_id, current_user["id"]))
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    
+
     with get_db() as conn:
         with conn.cursor() as cur:
-            # Delete messages first
-            cur.execute("DELETE FROM messages WHERE conversation_id = %s", (conversation_id,))
-            # Delete conversation
-            cur.execute("DELETE FROM conversations WHERE id = %s", (conversation_id,))
+            cur.execute("UPDATE messages SET is_deleted = 1 WHERE conversation_id = %s", (conversation_id,))
+            cur.execute("UPDATE conversations SET is_deleted = 1 WHERE id = %s", (conversation_id,))
             conn.commit()
-    
+
     return None

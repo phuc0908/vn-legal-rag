@@ -67,6 +67,14 @@ export const uploadAvatar = async (file) => {
   return response.data
 }
 
+// ── Admin API ──────────────────────────────────────────────────────────────────
+
+export const getAdminOverview    = async () => (await apiClient.get('/admin/stats/overview')).data
+export const getAdminDaily       = async () => (await apiClient.get('/admin/stats/daily')).data
+export const getAdminTopUsers    = async () => (await apiClient.get('/admin/stats/top-users')).data
+export const getAdminTopBookmarks = async () => (await apiClient.get('/admin/stats/top-bookmarks')).data
+export const getAdminTopViewed   = async () => (await apiClient.get('/admin/stats/top-viewed')).data
+
 export const changePassword = async (currentPassword, newPassword) => {
   const response = await apiClient.put('/auth/me/password', {
     current_password: currentPassword,

@@ -10,26 +10,28 @@ from app.api.auth_routes import router as auth_router
 from app.api.conversation_routes import router as conv_router
 from app.api.bookmark_routes import router as bookmark_router
 from app.api.history_routes import router as history_router
+from app.api.admin_routes import router as admin_router
 from app.db.database import get_db
 import uvicorn
 import os
 
+def _run_migration(cur, sql):
+    try:
+        cur.execute(sql)
+    except Exception:
+        pass
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        with get_db() as conn:
-            with conn.cursor() as cur:
-                cur.execute("ALTER TABLE users ADD COLUMN avatar_url MEDIUMTEXT NULL")
-                conn.commit()
-    except Exception:
-        # Column exists — upgrade VARCHAR(500) → MEDIUMTEXT if needed
-        try:
-            with get_db() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("ALTER TABLE users MODIFY COLUMN avatar_url MEDIUMTEXT NULL")
-                    conn.commit()
-        except Exception:
-            pass
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN avatar_url MEDIUMTEXT NULL")
+            _run_migration(cur, "ALTER TABLE users MODIFY COLUMN avatar_url MEDIUMTEXT NULL")
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN is_admin TINYINT(1) NOT NULL DEFAULT 0")
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+            _run_migration(cur, "ALTER TABLE conversations ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
+            _run_migration(cur, "ALTER TABLE messages ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
+            conn.commit()
     yield
 
 
@@ -58,6 +60,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(conv_router, prefix="/api")
 app.include_router(bookmark_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 # Serve frontend static file
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
