@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import os
 import time
 import pickle
 import re
+import hashlib
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -202,11 +205,16 @@ class HybridRetriever:
         self.bm25_index = bm25_index
 
     def search(self, query: str, top_k: int, filter_where: dict = None) -> List[Dict]:
-        """Hybrid search: vector + BM25, kết hợp bằng RRF."""
-        vector_results = self.vector_store.similarity_search(
-            query, k=top_k, filter_where=filter_where
-        )
-        bm25_results = self.bm25_index.search(query, top_k=top_k, filter_where=filter_where)
+        """Hybrid search: vector + BM25 chạy song song, kết hợp bằng RRF."""
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            f_vec = executor.submit(
+                self.vector_store.similarity_search, query, top_k, filter_where
+            )
+            f_bm25 = executor.submit(
+                self.bm25_index.search, query, top_k, filter_where
+            )
+            vector_results = f_vec.result()
+            bm25_results = f_bm25.result()
 
         # Dedup BM25: nếu nhiều khoản của cùng 1 điều xuất hiện,
         # chỉ giữ khoản có BM25 score cao nhất để tránh boost giả tạo trong RRF.
@@ -293,6 +301,24 @@ class RAGSystem:
             chunk_overlap=settings.CHUNK_OVERLAP,
             separators=["\n\n", "\n", " ", ""]
         )
+        # cache: {cache_key: (timestamp, results)}
+        self._cache: Dict[str, Tuple[float, List[Dict]]] = {}
+
+    def _cache_key(self, query: str, top_k: int, filter_where: dict) -> str:
+        payload = json.dumps({"q": query, "k": top_k, "f": filter_where}, sort_keys=True, ensure_ascii=False)
+        return hashlib.md5(payload.encode()).hexdigest()
+
+    def _get_cache(self, key: str) -> Optional[List[Dict]]:
+        if not settings.RETRIEVAL_CACHE_ENABLED:
+            return None
+        entry = self._cache.get(key)
+        if entry and (time.time() - entry[0]) < settings.RETRIEVAL_CACHE_TTL:
+            return entry[1]
+        return None
+
+    def _set_cache(self, key: str, results: List[Dict]) -> None:
+        if settings.RETRIEVAL_CACHE_ENABLED:
+            self._cache[key] = (time.time(), results)
 
     def _init_vector_store(self, chroma_path: str = None) -> BaseVectorStore:
         """Initialize vector store"""
@@ -335,6 +361,12 @@ class RAGSystem:
         rerank_query: dùng cho CrossEncoder reranking (mặc định = query)
         """
         filter_info = f" (filter: {filter_where})" if filter_where else ""
+        cache_key = self._cache_key(query, top_k, filter_where)
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            print(f"  [CACHE] Hit — trả về {len(cached)} docs từ cache")
+            return cached
+
         candidate_k = top_k * settings.RETRIEVAL_CANDIDATE_MULTIPLIER if self.reranker else top_k
 
         if self.hybrid_retriever:
@@ -347,6 +379,7 @@ class RAGSystem:
             results = self.reranker.rerank(effective_rerank_query, results, top_k=top_k)
 
         print(f"  [RETRIEVAL] Lấy top {len(results)} docs{filter_info}")
+        self._set_cache(cache_key, results)
         return results
 
     def add_documents_batch(self, documents: List[Dict]):
