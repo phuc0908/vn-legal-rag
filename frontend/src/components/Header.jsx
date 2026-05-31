@@ -56,6 +56,14 @@ export default function Header() {
           </Link>
           {isAuthenticated ? (
             <div className="user-profile">
+              {user?.is_admin && (
+                <Link
+                  to="/admin"
+                  className={`admin-link ${location.pathname.startsWith('/admin') ? 'active' : ''}`}
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/ho-so"
                 className={`user-name ${location.pathname.startsWith('/ho-so') ? 'active' : ''}`}

@@ -29,7 +29,7 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
         if request.conversation_id and request.chat_history is None:
             try:
                 rows = query_all(
-                    "SELECT role, content FROM messages WHERE conversation_id = %s "
+                    "SELECT role, content FROM messages WHERE conversation_id = %s AND is_deleted = 0 "
                     "ORDER BY created_at DESC LIMIT 6",
                     (request.conversation_id,)
                 )
@@ -46,7 +46,7 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
             try:
                 # Kiểm tra trước khi lưu — nếu chưa có message nào thì đây là query đầu tiên
                 existing = query_one(
-                    "SELECT COUNT(*) as cnt FROM messages WHERE conversation_id = %s",
+                    "SELECT COUNT(*) as cnt FROM messages WHERE conversation_id = %s AND is_deleted = 0",
                     (request.conversation_id,)
                 )
                 is_first_message = existing["cnt"] == 0

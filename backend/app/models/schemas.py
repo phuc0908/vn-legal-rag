@@ -96,6 +96,7 @@ class UserOut(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    is_admin: bool = False
 
     class Config:
         from_attributes = True

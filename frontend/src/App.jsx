@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import SavedPage from './pages/SavedPage'
 import ProfilePage from './pages/ProfilePage'
+import AdminPage from './pages/AdminPage'
 import { useThemeStore } from './store/themeStore'
 import './App.css'
 
@@ -29,6 +30,7 @@ function App() {
         <Route path="/phap-dien/dieu/:mapc" element={<DieuDetailPage />} />
         <Route path="/da-luu" element={<SavedPage />} />
         <Route path="/ho-so" element={<ProfilePage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
