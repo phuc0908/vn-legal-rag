@@ -12,6 +12,7 @@ from app.api.bookmark_routes import router as bookmark_router
 from app.api.history_routes import router as history_router
 from app.api.admin_routes import router as admin_router
 from app.db.database import get_db
+from app.rag.pipeline import get_rag_pipeline
 import uvicorn
 import os
 
@@ -32,6 +33,9 @@ async def lifespan(app: FastAPI):
             _run_migration(cur, "ALTER TABLE conversations ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
             _run_migration(cur, "ALTER TABLE messages ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
             conn.commit()
+    print("[STARTUP] Pre-loading RAG pipeline (embedding model + reranker + BM25)...")
+    get_rag_pipeline()
+    print("[STARTUP] Sẵn sàng nhận request.")
     yield
 
 
