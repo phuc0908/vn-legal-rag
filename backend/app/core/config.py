@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     BM25_INDEX_PATH: str = "./bm25_index.pkl"
     RRF_K: int = 60
 
+    # Retrieval Cache
+    RETRIEVAL_CACHE_ENABLED: bool = True
+    RETRIEVAL_CACHE_TTL: int = 300  # seconds
+
     # Database
     DATABASE_URL: Optional[str] = None
 
