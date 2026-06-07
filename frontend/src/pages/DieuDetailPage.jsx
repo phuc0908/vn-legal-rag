@@ -6,6 +6,19 @@ import { getDieuDetail, toggleBookmark, getBookmarkStatus, addHistory } from '..
 import { useAuthStore } from '../store/authStore'
 import '../styles/DieuDetailPage.css'
 
+function formatCitation(vbqppl, demucTen) {
+  if (!vbqppl || !demucTen) return null
+  const dieuMatch = vbqppl.match(/Điều\s+(\d+)/)
+  const yearMatch = vbqppl.match(/ngày\s+\d{1,2}\/\d{1,2}\/(\d{4})/)
+  if (!dieuMatch || !yearMatch) return null
+  return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+}
+
+function cleanDieuTen(ten) {
+  if (!ten) return ''
+  return ten.replace(/^Điều\s+[\d.A-Za-z]+\.\s*/, '').trim()
+}
+
 export default function DieuDetailPage() {
   const { mapc } = useParams()
   const navigate = useNavigate()
@@ -183,7 +196,9 @@ export default function DieuDetailPage() {
             <article className="dieu-article">
               <div className="article-header">
                 <div className="article-header-top">
-                  <div className="article-num">Điều {dieu.chimuc}</div>
+                  <div className="article-num">
+                    {formatCitation(dieu.vbqppl, dieu.demuc_ten) || `Điều ${dieu.chimuc}`}
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                     <button
                       className={`bookmark-btn ${bookmarked ? 'bookmarked' : ''}`}
@@ -198,7 +213,7 @@ export default function DieuDetailPage() {
                     )}
                   </div>
                 </div>
-                <h1 className="article-title">{dieu.ten}</h1>
+                <h1 className="article-title">{cleanDieuTen(dieu.ten)}</h1>
                 {dieu.vbqppl && (
                   <div className="article-source">
                     <span className="source-label">Nguồn:</span>

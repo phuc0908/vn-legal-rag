@@ -6,6 +6,22 @@ import { getChude, getDemuc, getChuong, getMuc, getDieuList } from '../services/
 import { useBrowserStore } from '../store/browserStore'
 import '../styles/LawBrowserPage.css'
 
+// "Điều 3 Thông tư liên tịch số 01/2016/..., có hiệu lực thi hành kể từ ngày 01/03/2016"
+// → "Điều 3 Luật Hôn nhân và gia đình 2016"
+function formatCitation(vbqppl, demucTen) {
+  if (!vbqppl || !demucTen) return null
+  const dieuMatch = vbqppl.match(/Điều\s+(\d+)/)
+  const yearMatch = vbqppl.match(/ngày\s+\d{1,2}\/\d{1,2}\/(\d{4})/)
+  if (!dieuMatch || !yearMatch) return null
+  return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+}
+
+// "Điều 8.4.TL.1.3. Thụ lý, giải quyết..." → "Thụ lý, giải quyết..."
+function cleanDieuTen(ten) {
+  if (!ten) return ''
+  return ten.replace(/^Điều\s+[\d.A-Za-z]+\.\s*/, '').trim()
+}
+
 export default function LawBrowserPage() {
   const [searchParams] = useSearchParams()
   const autoSelectDone = useRef(false)
@@ -295,9 +311,10 @@ export default function LawBrowserPage() {
                   to={`/phap-dien/dieu/${encodeURIComponent(d.mapc)}`}
                   className="dieu-item"
                 >
-                  <span className="dieu-num">Điều {d.chimuc}</span>
-                  <span className="dieu-text">{d.ten}</span>
-                  {d.vbqppl && <span className="dieu-vb">{d.vbqppl}</span>}
+                  <span className="dieu-num">
+                    {formatCitation(d.vbqppl, selectedDemuc?.ten) || `Điều ${d.chimuc}`}
+                  </span>
+                  <span className="dieu-text">{cleanDieuTen(d.ten)}</span>
                 </Link>
               ))
             )}
