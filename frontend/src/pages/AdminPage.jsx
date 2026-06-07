@@ -33,17 +33,36 @@ function StatCard({ label, value, sub, color = 'default' }) {
   )
 }
 
+const RANGE_OPTIONS = [
+  { days: 7,  label: '7 ngày' },
+  { days: 30, label: '1 tháng' },
+  { days: 90, label: '3 tháng' },
+]
+
 function MiniBar({ data, color }) {
   if (!data?.length) return <p className="no-data">Chưa có dữ liệu</p>
   const max = Math.max(...data.map(d => d.count), 1)
+  const total = data.length
+  const step = total <= 10 ? 1 : total <= 31 ? 5 : 14
+  const yTicks = [max, Math.round(max / 2), 0]
+
   return (
-    <div className="mini-bar-chart">
-      {data.map(d => (
-        <div key={d.date} className="bar-col" title={`${d.date}: ${d.count}`}>
-          <div className="bar-fill" style={{ height: `${(d.count / max) * 100}%`, background: color }} />
-          <span className="bar-label">{d.date.slice(5)}</span>
-        </div>
-      ))}
+    <div className="chart-wrapper">
+      <div className="chart-y-axis">
+        {yTicks.map((t, i) => (
+          <span key={i} className="y-tick">{fmt(t)}</span>
+        ))}
+      </div>
+      <div className="mini-bar-chart">
+        {data.map((d, i) => (
+          <div key={d.date} className="bar-col" title={`${d.date}: ${d.count}`}>
+            <div className="bar-fill" style={{ height: `${(d.count / max) * 100}%`, background: color }} />
+            <span className="bar-label" style={{ visibility: (i % step === 0 || i === total - 1) ? 'visible' : 'hidden' }}>
+              {d.date.slice(5)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -264,7 +283,6 @@ export default function AdminPage() {
   const navigate = useNavigate()
 
   const [overview, setOverview] = useState(null)
-  const [daily, setDaily] = useState(null)
   const [topUsers, setTopUsers] = useState([])
   const [topBookmarks, setTopBookmarks] = useState([])
   const [topViewed, setTopViewed] = useState([])
@@ -272,6 +290,9 @@ export default function AdminPage() {
   const [error, setError] = useState('')
 
   const [activeTab, setActiveTab] = useState('overview')
+  const [activityDays, setActivityDays] = useState(30)
+  const [activityData, setActivityData] = useState(null)
+  const [activityLoading, setActivityLoading] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) { navigate('/login'); return }
@@ -280,13 +301,11 @@ export default function AdminPage() {
     setLoading(true)
     Promise.all([
       getAdminOverview(),
-      getAdminDaily(),
       getAdminTopUsers(),
       getAdminTopBookmarks(),
       getAdminTopViewed(),
-    ]).then(([ov, dy, tu, tb, tv]) => {
+    ]).then(([ov, tu, tb, tv]) => {
       setOverview(ov)
-      setDaily(dy)
       setTopUsers(tu)
       setTopBookmarks(tb)
       setTopViewed(tv)
@@ -294,6 +313,15 @@ export default function AdminPage() {
       setError(e.response?.data?.detail || 'Không thể tải dữ liệu admin')
     }).finally(() => setLoading(false))
   }, [isAuthenticated, user, navigate])
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.is_admin) return
+    setActivityLoading(true)
+    getAdminDaily(activityDays)
+      .then(setActivityData)
+      .catch(() => {})
+      .finally(() => setActivityLoading(false))
+  }, [activityDays, isAuthenticated, user])
 
   if (!isAuthenticated || !user?.is_admin) return null
 
@@ -313,7 +341,7 @@ export default function AdminPage() {
         <div className="admin-tabs">
           {[
             { key: 'overview',  label: 'Tổng quan' },
-            { key: 'activity',  label: 'Hoạt động 30 ngày' },
+            { key: 'activity',  label: 'Hoạt động' },
             { key: 'users',     label: 'Người dùng' },
             { key: 'content',   label: 'Nội dung' },
             { key: 'limits',    label: 'Giới hạn câu hỏi' },
@@ -388,20 +416,37 @@ export default function AdminPage() {
             )}
 
             {/* ── ACTIVITY ── */}
-            {activeTab === 'activity' && daily && (
+            {activeTab === 'activity' && (
               <div className="tab-content">
-                <section className="admin-section">
-                  <h2>Người dùng mới (30 ngày)</h2>
-                  <MiniBar data={daily.new_users} color="var(--chart-blue)" />
-                </section>
-                <section className="admin-section">
-                  <h2>Cuộc hội thoại mới (30 ngày)</h2>
-                  <MiniBar data={daily.new_conversations} color="var(--chart-green)" />
-                </section>
-                <section className="admin-section">
-                  <h2>Câu hỏi của người dùng (30 ngày)</h2>
-                  <MiniBar data={daily.new_messages} color="var(--chart-red)" />
-                </section>
+                <div className="activity-range-btns">
+                  {RANGE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.days}
+                      className={`range-btn ${activityDays === opt.days ? 'active' : ''}`}
+                      onClick={() => setActivityDays(opt.days)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {activityLoading ? (
+                  <div className="admin-loading">Đang tải...</div>
+                ) : activityData ? (
+                  <>
+                    <section className="admin-section">
+                      <h2>Người dùng mới ({RANGE_OPTIONS.find(o => o.days === activityDays)?.label})</h2>
+                      <MiniBar data={activityData.new_users} color="var(--chart-blue)" />
+                    </section>
+                    <section className="admin-section">
+                      <h2>Cuộc hội thoại mới ({RANGE_OPTIONS.find(o => o.days === activityDays)?.label})</h2>
+                      <MiniBar data={activityData.new_conversations} color="var(--chart-green)" />
+                    </section>
+                    <section className="admin-section">
+                      <h2>Câu hỏi của người dùng ({RANGE_OPTIONS.find(o => o.days === activityDays)?.label})</h2>
+                      <MiniBar data={activityData.new_messages} color="var(--chart-red)" />
+                    </section>
+                  </>
+                ) : null}
               </div>
             )}
 

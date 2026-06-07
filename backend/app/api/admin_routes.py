@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.core.auth import get_current_user
 from app.db.database import query_one, query_all, get_db
 from app.models.schemas import GlobalLimitRequest, UserLimitRequest
@@ -64,26 +64,29 @@ def get_overview(admin=Depends(require_admin)):
 
 
 @router.get("/stats/daily")
-def get_daily(admin=Depends(require_admin)):
-    def daily(sql):
-        rows = query_all(sql)
+def get_daily(days: int = Query(30, ge=7, le=90), admin=Depends(require_admin)):
+    def daily(sql, params):
+        rows = query_all(sql, params)
         return [{"date": str(r["date"]), "count": r["count"]} for r in rows]
 
     return {
         "new_users": daily(
             "SELECT DATE(created_at) as date, COUNT(*) as count FROM users "
-            "WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) "
-            "GROUP BY DATE(created_at) ORDER BY date ASC"
+            "WHERE created_at >= DATE_SUB(NOW(), INTERVAL %s DAY) "
+            "GROUP BY DATE(created_at) ORDER BY date ASC",
+            (days,)
         ),
         "new_conversations": daily(
             "SELECT DATE(created_at) as date, COUNT(*) as count FROM conversations "
-            "WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) "
-            "GROUP BY DATE(created_at) ORDER BY date ASC"
+            "WHERE created_at >= DATE_SUB(NOW(), INTERVAL %s DAY) "
+            "GROUP BY DATE(created_at) ORDER BY date ASC",
+            (days,)
         ),
         "new_messages": daily(
             "SELECT DATE(created_at) as date, COUNT(*) as count FROM messages "
-            "WHERE role = 'user' AND is_deleted = 0 AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) "
-            "GROUP BY DATE(created_at) ORDER BY date ASC"
+            "WHERE role = 'user' AND is_deleted = 0 AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY) "
+            "GROUP BY DATE(created_at) ORDER BY date ASC",
+            (days,)
         ),
     }
 

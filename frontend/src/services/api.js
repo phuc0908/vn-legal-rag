@@ -70,7 +70,7 @@ export const uploadAvatar = async (file) => {
 // ── Admin API ──────────────────────────────────────────────────────────────────
 
 export const getAdminOverview    = async () => (await apiClient.get('/admin/stats/overview')).data
-export const getAdminDaily       = async () => (await apiClient.get('/admin/stats/daily')).data
+export const getAdminDaily       = async (days = 30) => (await apiClient.get('/admin/stats/daily', { params: { days } })).data
 export const getAdminTopUsers    = async () => (await apiClient.get('/admin/stats/top-users')).data
 export const getAdminTopBookmarks = async () => (await apiClient.get('/admin/stats/top-bookmarks')).data
 export const getAdminTopViewed   = async () => (await apiClient.get('/admin/stats/top-viewed')).data

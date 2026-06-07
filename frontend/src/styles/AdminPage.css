@@ -144,12 +144,37 @@
   --chart-red:   #ef4444;
 }
 
+.chart-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 36px;
+  height: 100px;
+  padding-bottom: 22px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.y-tick {
+  font-size: 10px;
+  color: var(--text-muted, #aaa);
+  line-height: 1;
+}
+
 .mini-bar-chart {
+  flex: 1;
   display: flex;
   align-items: flex-end;
   gap: 3px;
   height: 100px;
   padding: 0 4px;
+  min-width: 0;
 }
 
 .bar-col {
@@ -160,6 +185,7 @@
   justify-content: flex-end;
   gap: 4px;
   height: 100%;
+  min-width: 0;
 }
 
 .bar-fill {
@@ -175,6 +201,34 @@
   writing-mode: vertical-lr;
   transform: rotate(180deg);
   white-space: nowrap;
+}
+
+/* ── Activity range buttons ───────────────────── */
+.activity-range-btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.range-btn {
+  padding: 5px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid var(--border, #ddd);
+  background: transparent;
+  color: var(--text, #333);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.range-btn:hover {
+  background: var(--bg-hover, #f0f0f0);
+}
+
+.range-btn.active {
+  background: var(--chart-blue);
+  color: #fff;
+  border-color: var(--chart-blue);
 }
 
 .no-data {
