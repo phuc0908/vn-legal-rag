@@ -95,7 +95,7 @@ def get_daily(days: int = Query(30, ge=7, le=90), admin=Depends(require_admin)):
 def get_top_users(admin=Depends(require_admin)):
     return query_all(
         """
-        SELECT u.id, u.username, u.full_name, u.email, u.is_admin,
+        SELECT u.id, u.username, u.full_name, u.email, u.is_admin, u.is_active,
                u.created_at,
                COUNT(DISTINCT c.id)  AS conversation_count,
                COUNT(DISTINCT m.id)  AS message_count,
@@ -139,11 +139,26 @@ def get_top_viewed(admin=Depends(require_admin)):
 
 # ── Users ──────────────────────────────────────────────────────────────────────
 
+@router.patch("/users/{user_id}/toggle-active")
+def toggle_active(user_id: int, admin=Depends(require_admin)):
+    user = query_one("SELECT id, is_active, is_admin FROM users WHERE id = %s", (user_id,))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user["is_admin"]:
+        raise HTTPException(status_code=400, detail="Không thể vô hiệu hóa tài khoản admin")
+    new_val = 0 if user["is_active"] else 1
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_val, user_id))
+            conn.commit()
+    return {"id": user_id, "is_active": bool(new_val)}
+
+
 @router.get("/users")
 def get_all_users(admin=Depends(require_admin)):
     return query_all(
         """
-        SELECT u.id, u.username, u.full_name, u.email, u.is_admin, u.created_at,
+        SELECT u.id, u.username, u.full_name, u.email, u.is_admin, u.is_active, u.created_at,
                u.daily_question_limit,
                COUNT(DISTINCT c.id) AS conversation_count,
                (SELECT COUNT(*) FROM messages m2

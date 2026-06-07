@@ -5,6 +5,7 @@ import Footer from '../components/Footer'
 import {
   getAdminOverview, getAdminDaily, getAdminTopUsers, getAdminTopBookmarks, getAdminTopViewed,
   getAdminAllUsers, getAdminSettings, updateGlobalDailyLimit, setUserDailyLimit, resetUserDailyLimit,
+  toggleUserActive,
 } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import '../styles/AdminPage.css'
@@ -157,6 +158,19 @@ function LimitsTab() {
     }
   }
 
+  const handleToggleBan = async (userId) => {
+    setSaving(true)
+    try {
+      const result = await toggleUserActive(userId)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: result.is_active } : u))
+      flash(result.is_active ? 'Đã mở khóa tài khoản' : 'Đã vô hiệu hóa tài khoản')
+    } catch {
+      flash('Không thể thay đổi trạng thái tài khoản', true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const limitLabel = (u) => {
     if (u.is_admin) return <span className="limit-label-admin">Admin (vô hạn)</span>
     if (u.daily_question_limit === null) return <span className="limit-label-default">Mặc định ({globalLimit === 0 ? '∞' : globalLimit})</span>
@@ -207,6 +221,7 @@ function LimitsTab() {
                 <th>Username</th>
                 <th>Họ tên</th>
                 <th>Role</th>
+                <th>Trạng thái</th>
                 <th>Giới hạn/ngày</th>
                 <th>Dùng hôm nay</th>
                 <th>Thao tác</th>
@@ -214,7 +229,7 @@ function LimitsTab() {
             </thead>
             <tbody>
               {users.map((u, i) => (
-                <tr key={u.id}>
+                <tr key={u.id} className={u.is_active === false ? 'row-banned' : ''}>
                   <td className="td-num">{i + 1}</td>
                   <td className="td-bold">{u.username}</td>
                   <td>{u.full_name || <em className="empty">—</em>}</td>
@@ -222,6 +237,14 @@ function LimitsTab() {
                     {u.is_admin
                       ? <span className="badge badge-admin">Admin</span>
                       : <span className="badge badge-user">User</span>
+                    }
+                  </td>
+                  <td>
+                    {u.is_admin
+                      ? <em className="empty">—</em>
+                      : u.is_active === false
+                        ? <span className="badge badge-banned">Bị ban</span>
+                        : <span className="badge badge-active">Hoạt động</span>
                     }
                   </td>
                   <td>
@@ -257,10 +280,17 @@ function LimitsTab() {
                           </>
                         ) : (
                           <>
-                            <button className="limit-btn limit-btn--edit" onClick={() => startEdit(u)}>Sửa</button>
+                            <button className="limit-btn limit-btn--edit" onClick={() => startEdit(u)} disabled={u.is_active === false}>Sửa</button>
                             {u.daily_question_limit !== null && (
-                              <button className="limit-btn limit-btn--reset" onClick={() => handleReset(u.id)} disabled={saving}>Reset</button>
+                              <button className="limit-btn limit-btn--reset" onClick={() => handleReset(u.id)} disabled={saving || u.is_active === false}>Reset</button>
                             )}
+                            <button
+                              className={`limit-btn ${u.is_active === false ? 'limit-btn--unban' : 'limit-btn--ban'}`}
+                              onClick={() => handleToggleBan(u.id)}
+                              disabled={saving}
+                            >
+                              {u.is_active === false ? 'Mở khóa' : 'Ban'}
+                            </button>
                           </>
                         )}
                       </div>
@@ -468,11 +498,12 @@ export default function AdminPage() {
                           <th>Bookmark</th>
                           <th>Ngày tạo</th>
                           <th>Role</th>
+                          <th>Trạng thái</th>
                         </tr>
                       </thead>
                       <tbody>
                         {topUsers.map((u, i) => (
-                          <tr key={u.id}>
+                          <tr key={u.id} className={u.is_active === false ? 'row-banned' : ''}>
                             <td className="td-num">{i + 1}</td>
                             <td className="td-bold">{u.username}</td>
                             <td>{u.full_name || <em className="empty">—</em>}</td>
@@ -485,6 +516,12 @@ export default function AdminPage() {
                               {u.is_admin
                                 ? <span className="badge badge-admin">Admin</span>
                                 : <span className="badge badge-user">User</span>
+                              }
+                            </td>
+                            <td>
+                              {u.is_active === false
+                                ? <span className="badge badge-banned">Bị ban</span>
+                                : <span className="badge badge-active">Hoạt động</span>
                               }
                             </td>
                           </tr>
