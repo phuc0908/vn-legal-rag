@@ -31,6 +31,19 @@ async def lifespan(app: FastAPI):
             _run_migration(cur, "ALTER TABLE users ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP")
             _run_migration(cur, "ALTER TABLE conversations ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
             _run_migration(cur, "ALTER TABLE messages ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN daily_question_limit INT NULL DEFAULT NULL")
+            _run_migration(cur, """CREATE TABLE IF NOT EXISTS system_settings (
+                `key` VARCHAR(50) PRIMARY KEY,
+                `value` VARCHAR(255) NOT NULL,
+                description TEXT
+            )""")
+            try:
+                cur.execute(
+                    "INSERT IGNORE INTO system_settings (`key`, `value`, description) VALUES "
+                    "('default_daily_limit', '20', 'Số câu hỏi mặc định mỗi ngày cho người dùng thường')"
+                )
+            except Exception:
+                pass
             conn.commit()
     yield
 

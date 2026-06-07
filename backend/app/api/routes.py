@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 import traceback
-from app.models.schemas import QueryRequest, QueryResponse, HealthResponse, ChatTurn
+from app.models.schemas import QueryRequest, QueryResponse, HealthResponse, ChatTurn, QuotaUsage
 from app.rag.pipeline import get_rag_pipeline
 from app.core.auth import get_current_user
 from app.utils.db_helpers import save_message, update_conversation_title
@@ -12,12 +12,62 @@ import app.rag.llm as llm_module
 router = APIRouter(tags=["rag"])
 
 
+def _get_effective_limit(user_id: int) -> Optional[int]:
+    """Trả về giới hạn câu hỏi/ngày của user. None = vô hạn."""
+    user_row = query_one("SELECT daily_question_limit FROM users WHERE id = %s", (user_id,))
+    if user_row and user_row["daily_question_limit"] is not None:
+        val = user_row["daily_question_limit"]
+        return None if val == 0 else val
+    setting = query_one("SELECT `value` FROM system_settings WHERE `key` = 'default_daily_limit'")
+    if setting:
+        val = int(setting["value"])
+        return None if val == 0 else val
+    return 20
+
+
+def _count_today_questions(user_id: int) -> int:
+    result = query_one(
+        "SELECT COUNT(*) as cnt FROM messages m "
+        "JOIN conversations c ON m.conversation_id = c.id "
+        "WHERE c.user_id = %s AND m.role = 'user' "
+        "AND DATE(m.created_at) = CURDATE() AND m.is_deleted = 0",
+        (user_id,)
+    )
+    return result["cnt"] if result else 0
+
+
+@router.get("/quota")
+async def get_quota(current_user: dict = Depends(get_current_user)):
+    if current_user.get("is_admin"):
+        return {"is_admin": True, "used": 0, "limit": None, "remaining": None}
+    limit = _get_effective_limit(current_user["id"])
+    used = _count_today_questions(current_user["id"])
+    remaining = None if limit is None else max(0, limit - used)
+    return {"is_admin": False, "used": used, "limit": limit, "remaining": remaining}
+
+
 @router.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest, current_user: dict = Depends(get_current_user)):
     """
     Process a legal query and retrieve relevant documents with AI-generated answer
     """
     try:
+        # Kiểm tra giới hạn câu hỏi hàng ngày (bỏ qua cho admin)
+        effective_limit = None
+        if not current_user.get("is_admin"):
+            effective_limit = _get_effective_limit(current_user["id"])
+            if effective_limit is not None:
+                used_count = _count_today_questions(current_user["id"])
+                if used_count >= effective_limit:
+                    raise HTTPException(
+                        status_code=429,
+                        detail={
+                            "message": "Bạn đã đạt giới hạn câu hỏi hôm nay",
+                            "limit": effective_limit,
+                            "used": used_count,
+                        }
+                    )
+
         pipeline = get_rag_pipeline()
         if pipeline is None:
             raise HTTPException(
@@ -57,11 +107,22 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
                 if is_first_message:
                     update_conversation_title(request.conversation_id, request.query[:60])
             except Exception as db_err:
-                # Không fail toàn bộ request nếu chỉ lỗi lưu DB
                 print(f"Warning: failed to save messages to DB: {db_err}")
+
+        # Đính kèm thông tin quota vào response (chỉ cho user thường có giới hạn)
+        if not current_user.get("is_admin") and effective_limit is not None:
+            used_after = _count_today_questions(current_user["id"])
+            usage = QuotaUsage(
+                used=used_after,
+                limit=effective_limit,
+                remaining=max(0, effective_limit - used_after),
+            )
+            response = response.model_copy(update={"usage": usage})
 
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(
