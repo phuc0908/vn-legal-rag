@@ -28,6 +28,12 @@ class SourceDocument(BaseModel):
     url: Optional[str] = None
 
 
+class QuotaUsage(BaseModel):
+    used: int
+    limit: Optional[int] = None
+    remaining: Optional[int] = None
+
+
 class QueryResponse(BaseModel):
     """Response model for RAG query"""
     query: str
@@ -35,6 +41,7 @@ class QueryResponse(BaseModel):
     sources: List[SourceDocument]
     processing_time: float
     model_used: Optional[str] = None
+    usage: Optional[QuotaUsage] = None
 
 
 class Message(BaseModel):
@@ -108,6 +115,12 @@ class UserUpdate(BaseModel):
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
+
+class GlobalLimitRequest(BaseModel):
+    limit: int  # 0 = vô hạn
+
+class UserLimitRequest(BaseModel):
+    limit: Optional[int] = None  # None = dùng mặc định hệ thống, 0 = vô hạn riêng, N = N câu/ngày
 
 # Conversation Schemas
 class MessageOut(BaseModel):

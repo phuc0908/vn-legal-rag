@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { getAdminOverview, getAdminDaily, getAdminTopUsers, getAdminTopBookmarks, getAdminTopViewed } from '../services/api'
+import {
+  getAdminOverview, getAdminDaily, getAdminTopUsers, getAdminTopBookmarks, getAdminTopViewed,
+  getAdminAllUsers, getAdminSettings, updateGlobalDailyLimit, setUserDailyLimit, resetUserDailyLimit,
+} from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import '../styles/AdminPage.css'
 
@@ -41,6 +44,215 @@ function MiniBar({ data, color }) {
           <span className="bar-label">{d.date.slice(5)}</span>
         </div>
       ))}
+    </div>
+  )
+}
+
+// ── Limits Tab ─────────────────────────────────────────────────────────────────
+
+function LimitsTab() {
+  const [globalLimit, setGlobalLimit] = useState(20)
+  const [globalInput, setGlobalInput] = useState('20')
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editValue, setEditValue] = useState('')
+
+  const load = useCallback(() => {
+    setLoading(true)
+    Promise.all([getAdminSettings(), getAdminAllUsers()])
+      .then(([settings, allUsers]) => {
+        const lim = parseInt(settings.default_daily_limit) || 20
+        setGlobalLimit(lim)
+        setGlobalInput(String(lim))
+        setUsers(allUsers)
+      })
+      .catch(() => setError('Không thể tải dữ liệu giới hạn'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const flash = (msg, isError = false) => {
+    if (isError) setError(msg)
+    else setSuccess(msg)
+    setTimeout(() => { setError(''); setSuccess('') }, 3000)
+  }
+
+  const handleSaveGlobal = async () => {
+    const val = parseInt(globalInput)
+    if (isNaN(val) || val < 0) { flash('Giá trị không hợp lệ (phải >= 0)', true); return }
+    setSaving(true)
+    try {
+      await updateGlobalDailyLimit(val)
+      setGlobalLimit(val)
+      flash(`Đã cập nhật giới hạn mặc định: ${val === 0 ? 'Vô hạn' : `${val} câu/ngày`}`)
+    } catch {
+      flash('Không thể lưu cài đặt', true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const startEdit = (u) => {
+    setEditingId(u.id)
+    setEditValue(u.daily_question_limit === null ? '' : String(u.daily_question_limit))
+  }
+
+  const cancelEdit = () => { setEditingId(null); setEditValue('') }
+
+  const handleSaveUserLimit = async (userId) => {
+    const raw = editValue.trim()
+    const val = raw === '' ? null : parseInt(raw)
+    if (raw !== '' && (isNaN(val) || val < 0)) { flash('Giá trị không hợp lệ (phải >= 0 hoặc để trống để dùng mặc định)', true); return }
+    setSaving(true)
+    try {
+      if (raw === '') {
+        await resetUserDailyLimit(userId)
+      } else {
+        await setUserDailyLimit(userId, val)
+      }
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, daily_question_limit: val } : u))
+      cancelEdit()
+      flash('Đã cập nhật giới hạn người dùng')
+    } catch {
+      flash('Không thể lưu giới hạn người dùng', true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReset = async (userId) => {
+    setSaving(true)
+    try {
+      await resetUserDailyLimit(userId)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, daily_question_limit: null } : u))
+      flash('Đã đặt lại về mặc định hệ thống')
+    } catch {
+      flash('Không thể đặt lại giới hạn', true)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const limitLabel = (u) => {
+    if (u.is_admin) return <span className="limit-label-admin">Admin (vô hạn)</span>
+    if (u.daily_question_limit === null) return <span className="limit-label-default">Mặc định ({globalLimit === 0 ? '∞' : globalLimit})</span>
+    if (u.daily_question_limit === 0) return <span className="limit-label-unlimited">Vô hạn</span>
+    return <span className="limit-label-custom">{u.daily_question_limit} câu/ngày</span>
+  }
+
+  if (loading) return <div className="admin-loading">Đang tải dữ liệu giới hạn...</div>
+
+  return (
+    <div className="tab-content">
+      {error && <div className="admin-error">{error}</div>}
+      {success && <div className="admin-success">{success}</div>}
+
+      {/* Global settings */}
+      <section className="admin-section">
+        <h2>Giới hạn mặc định toàn hệ thống</h2>
+        <div className="limit-global-row">
+          <label className="limit-global-label">Số câu hỏi mỗi ngày (0 = vô hạn):</label>
+          <div className="limit-global-inputs">
+            <input
+              type="number"
+              min="0"
+              className="limit-number-input"
+              value={globalInput}
+              onChange={e => setGlobalInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSaveGlobal()}
+              disabled={saving}
+            />
+            <button className="limit-btn limit-btn--save" onClick={handleSaveGlobal} disabled={saving}>
+              {saving ? 'Đang lưu...' : 'Lưu'}
+            </button>
+          </div>
+          <p className="limit-global-hint">
+            Áp dụng cho tất cả người dùng thường không có giới hạn riêng. Hiện tại: <strong>{globalLimit === 0 ? 'Vô hạn' : `${globalLimit} câu/ngày`}</strong>
+          </p>
+        </div>
+      </section>
+
+      {/* Per-user limits table */}
+      <section className="admin-section">
+        <h2>Giới hạn theo từng người dùng</h2>
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Họ tên</th>
+                <th>Role</th>
+                <th>Giới hạn/ngày</th>
+                <th>Dùng hôm nay</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, i) => (
+                <tr key={u.id}>
+                  <td className="td-num">{i + 1}</td>
+                  <td className="td-bold">{u.username}</td>
+                  <td>{u.full_name || <em className="empty">—</em>}</td>
+                  <td>
+                    {u.is_admin
+                      ? <span className="badge badge-admin">Admin</span>
+                      : <span className="badge badge-user">User</span>
+                    }
+                  </td>
+                  <td>
+                    {editingId === u.id ? (
+                      <input
+                        type="number"
+                        min="0"
+                        className="limit-inline-input"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveUserLimit(u.id); if (e.key === 'Escape') cancelEdit() }}
+                        placeholder={`Mặc định (${globalLimit})`}
+                        autoFocus
+                      />
+                    ) : (
+                      limitLabel(u)
+                    )}
+                  </td>
+                  <td className="td-num">
+                    {u.is_admin ? <em className="empty">—</em> : (
+                      <span className={u.today_question_count >= (u.daily_question_limit ?? globalLimit) && !u.is_admin && (u.daily_question_limit ?? globalLimit) > 0 ? 'quota-warn' : ''}>
+                        {fmt(u.today_question_count)}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {!u.is_admin && (
+                      <div className="limit-actions">
+                        {editingId === u.id ? (
+                          <>
+                            <button className="limit-btn limit-btn--save" onClick={() => handleSaveUserLimit(u.id)} disabled={saving}>Lưu</button>
+                            <button className="limit-btn limit-btn--cancel" onClick={cancelEdit} disabled={saving}>Hủy</button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="limit-btn limit-btn--edit" onClick={() => startEdit(u)}>Sửa</button>
+                            {u.daily_question_limit !== null && (
+                              <button className="limit-btn limit-btn--reset" onClick={() => handleReset(u.id)} disabled={saving}>Reset</button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   )
 }
@@ -97,28 +309,31 @@ export default function AdminPage() {
 
         {error && <div className="admin-error">{error}</div>}
 
-        {loading ? (
+        {/* ── Tabs ── */}
+        <div className="admin-tabs">
+          {[
+            { key: 'overview',  label: 'Tổng quan' },
+            { key: 'activity',  label: 'Hoạt động 30 ngày' },
+            { key: 'users',     label: 'Người dùng' },
+            { key: 'content',   label: 'Nội dung' },
+            { key: 'limits',    label: 'Giới hạn câu hỏi' },
+          ].map(t => (
+            <button
+              key={t.key}
+              className={`admin-tab-btn ${activeTab === t.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'limits' ? (
+          <LimitsTab />
+        ) : loading ? (
           <div className="admin-loading">Đang tải dữ liệu...</div>
         ) : (
           <>
-            {/* ── Tabs ── */}
-            <div className="admin-tabs">
-              {[
-                { key: 'overview', label: 'Tổng quan' },
-                { key: 'activity', label: 'Hoạt động 30 ngày' },
-                { key: 'users', label: 'Người dùng' },
-                { key: 'content', label: 'Nội dung' },
-              ].map(t => (
-                <button
-                  key={t.key}
-                  className={`admin-tab-btn ${activeTab === t.key ? 'active' : ''}`}
-                  onClick={() => setActiveTab(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
             {/* ── OVERVIEW ── */}
             {activeTab === 'overview' && overview && (
               <div className="tab-content">

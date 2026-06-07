@@ -271,8 +271,132 @@
 [data-theme="dark"] .badge-admin { background: #451a03; color: #fcd34d; }
 [data-theme="dark"] .badge-user  { background: var(--bg-active); color: var(--text-secondary); }
 
+/* ── Success alert ───────────────────────────── */
+.admin-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ── Limits tab ──────────────────────────────── */
+.limit-global-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.limit-global-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.limit-global-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.limit-number-input {
+  width: 120px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #e8eaf0);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--bg-input, #fff);
+  color: var(--text-primary, #1a1a2e);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.limit-number-input:focus {
+  border-color: var(--accent, #c0392b);
+}
+
+.limit-global-hint {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+/* Buttons */
+.limit-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.limit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.limit-btn--save   { background: var(--accent, #c0392b); color: #fff; }
+.limit-btn--save:hover:not(:disabled)   { background: var(--accent-hover, #a93226); }
+
+.limit-btn--cancel { background: var(--bg-hover, #f0f0f4); color: var(--text-secondary, #666); }
+.limit-btn--cancel:hover:not(:disabled) { background: var(--border-color, #e8eaf0); }
+
+.limit-btn--edit   { background: #eff6ff; color: #1d4ed8; }
+.limit-btn--edit:hover:not(:disabled)   { background: #dbeafe; }
+
+.limit-btn--reset  { background: #fff7ed; color: #c2410c; }
+.limit-btn--reset:hover:not(:disabled)  { background: #ffedd5; }
+
+/* Inline edit input */
+.limit-inline-input {
+  width: 90px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent, #c0392b);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg-input, #fff);
+  color: var(--text-primary, #1a1a2e);
+  outline: none;
+}
+
+.limit-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Limit labels */
+.limit-label-default   { font-size: 12px; color: var(--text-secondary, #666); }
+.limit-label-admin     { font-size: 12px; color: #92400e; font-weight: 600; }
+.limit-label-unlimited { font-size: 12px; color: #15803d; font-weight: 600; }
+.limit-label-custom    { font-size: 12px; color: #1d4ed8; font-weight: 600; }
+
+/* Quota warning in table */
+.quota-warn { color: #dc2626; font-weight: 700; }
+
+/* ── Dark mode (limits) ───────────────────────── */
+[data-theme="dark"] .limit-number-input,
+[data-theme="dark"] .limit-inline-input {
+  background: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .admin-success {
+  background: #052e16;
+  border-color: #166534;
+  color: #4ade80;
+}
+
+[data-theme="dark"] .limit-btn--cancel { background: var(--bg-hover); color: var(--text-secondary); }
+[data-theme="dark"] .limit-btn--edit   { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .limit-btn--reset  { background: #431407; color: #fdba74; }
+
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-tab-btn { padding: 8px 12px; font-size: 13px; }
+  .limit-global-inputs { flex-wrap: wrap; }
 }

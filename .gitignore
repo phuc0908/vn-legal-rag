@@ -9,3 +9,6 @@ backend/scripts/generate_report.py
 backend/scripts/diagnose_hit.py
 backend/scripts/eval_ablation.py
 uploads/avatars/5_b5bf26d1cc9b48d7af1e1f87df9b3a73.png
+backend/scripts/eval/embed_compare_colab.ipynb
+backend/scripts/eval/export_hon_nhan_docs.py
+backend/scripts/eval/eval_embed_compare.py

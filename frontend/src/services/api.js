@@ -74,6 +74,15 @@ export const getAdminDaily       = async () => (await apiClient.get('/admin/stat
 export const getAdminTopUsers    = async () => (await apiClient.get('/admin/stats/top-users')).data
 export const getAdminTopBookmarks = async () => (await apiClient.get('/admin/stats/top-bookmarks')).data
 export const getAdminTopViewed   = async () => (await apiClient.get('/admin/stats/top-viewed')).data
+export const getAdminAllUsers    = async () => (await apiClient.get('/admin/users')).data
+export const getAdminSettings    = async () => (await apiClient.get('/admin/settings')).data
+export const updateGlobalDailyLimit = async (limit) => (await apiClient.put('/admin/settings/daily_limit', { limit })).data
+export const setUserDailyLimit   = async (userId, limit) => (await apiClient.put(`/admin/users/${userId}/limit`, { limit })).data
+export const resetUserDailyLimit = async (userId) => (await apiClient.delete(`/admin/users/${userId}/limit`)).data
+
+// ── Quota API ──────────────────────────────────────────────────────────────────
+
+export const getMyQuota = async () => (await apiClient.get('/quota')).data
 
 export const changePassword = async (currentPassword, newPassword) => {
   const response = await apiClient.put('/auth/me/password', {

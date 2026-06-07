@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.auth import get_current_user
-from app.db.database import query_one, query_all
+from app.db.database import query_one, query_all, get_db
+from app.models.schemas import GlobalLimitRequest, UserLimitRequest
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -10,6 +11,8 @@ def require_admin(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Yêu cầu quyền admin")
     return current_user
 
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
 
 @router.get("/stats/overview")
 def get_overview(admin=Depends(require_admin)):
@@ -131,12 +134,20 @@ def get_top_viewed(admin=Depends(require_admin)):
     )
 
 
+# ── Users ──────────────────────────────────────────────────────────────────────
+
 @router.get("/users")
 def get_all_users(admin=Depends(require_admin)):
     return query_all(
         """
         SELECT u.id, u.username, u.full_name, u.email, u.is_admin, u.created_at,
-               COUNT(DISTINCT c.id) AS conversation_count
+               u.daily_question_limit,
+               COUNT(DISTINCT c.id) AS conversation_count,
+               (SELECT COUNT(*) FROM messages m2
+                JOIN conversations c2 ON m2.conversation_id = c2.id
+                WHERE c2.user_id = u.id AND m2.role = 'user'
+                  AND DATE(m2.created_at) = CURDATE() AND m2.is_deleted = 0
+               ) AS today_question_count
         FROM users u
         LEFT JOIN conversations c ON c.user_id = u.id AND c.is_deleted = 0
         GROUP BY u.id
@@ -147,7 +158,6 @@ def get_all_users(admin=Depends(require_admin)):
 
 @router.patch("/users/{user_id}/toggle-admin")
 def toggle_admin(user_id: int, admin=Depends(require_admin)):
-    from app.db.database import get_db
     user = query_one("SELECT id, is_admin FROM users WHERE id = %s", (user_id,))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -157,3 +167,48 @@ def toggle_admin(user_id: int, admin=Depends(require_admin)):
             cur.execute("UPDATE users SET is_admin = %s WHERE id = %s", (new_val, user_id))
             conn.commit()
     return {"id": user_id, "is_admin": bool(new_val)}
+
+
+# ── Settings (giới hạn câu hỏi) ───────────────────────────────────────────────
+
+@router.get("/settings")
+def get_settings(admin=Depends(require_admin)):
+    row = query_one("SELECT `value` FROM system_settings WHERE `key` = 'default_daily_limit'")
+    return {"default_daily_limit": int(row["value"]) if row else 20}
+
+
+@router.put("/settings/daily_limit")
+def update_daily_limit(body: GlobalLimitRequest, admin=Depends(require_admin)):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO system_settings (`key`, `value`) VALUES ('default_daily_limit', %s) "
+                "ON DUPLICATE KEY UPDATE `value` = %s",
+                (str(body.limit), str(body.limit))
+            )
+            conn.commit()
+    return {"default_daily_limit": body.limit}
+
+
+@router.put("/users/{user_id}/limit")
+def set_user_limit(user_id: int, body: UserLimitRequest, admin=Depends(require_admin)):
+    user = query_one("SELECT id FROM users WHERE id = %s", (user_id,))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET daily_question_limit = %s WHERE id = %s", (body.limit, user_id))
+            conn.commit()
+    return {"user_id": user_id, "daily_question_limit": body.limit}
+
+
+@router.delete("/users/{user_id}/limit")
+def reset_user_limit(user_id: int, admin=Depends(require_admin)):
+    user = query_one("SELECT id FROM users WHERE id = %s", (user_id,))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET daily_question_limit = NULL WHERE id = %s", (user_id,))
+            conn.commit()
+    return {"user_id": user_id, "daily_question_limit": None}
