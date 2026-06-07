@@ -43,4 +43,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user = query_one("SELECT id, username, email, full_name, avatar_url, is_admin, is_active FROM users WHERE username = %s", (username,))
     if user is None:
         raise credentials_exception
+    if not user.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+        )
     return user

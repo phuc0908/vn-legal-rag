@@ -70,7 +70,7 @@ export const uploadAvatar = async (file) => {
 // ── Admin API ──────────────────────────────────────────────────────────────────
 
 export const getAdminOverview    = async () => (await apiClient.get('/admin/stats/overview')).data
-export const getAdminDaily       = async () => (await apiClient.get('/admin/stats/daily')).data
+export const getAdminDaily       = async (days = 30) => (await apiClient.get('/admin/stats/daily', { params: { days } })).data
 export const getAdminTopUsers    = async () => (await apiClient.get('/admin/stats/top-users')).data
 export const getAdminTopBookmarks = async () => (await apiClient.get('/admin/stats/top-bookmarks')).data
 export const getAdminTopViewed   = async () => (await apiClient.get('/admin/stats/top-viewed')).data
@@ -78,7 +78,8 @@ export const getAdminAllUsers    = async () => (await apiClient.get('/admin/user
 export const getAdminSettings    = async () => (await apiClient.get('/admin/settings')).data
 export const updateGlobalDailyLimit = async (limit) => (await apiClient.put('/admin/settings/daily_limit', { limit })).data
 export const setUserDailyLimit   = async (userId, limit) => (await apiClient.put(`/admin/users/${userId}/limit`, { limit })).data
-export const resetUserDailyLimit = async (userId) => (await apiClient.delete(`/admin/users/${userId}/limit`)).data
+export const resetUserDailyLimit  = async (userId) => (await apiClient.delete(`/admin/users/${userId}/limit`)).data
+export const toggleUserActive     = async (userId) => (await apiClient.patch(`/admin/users/${userId}/toggle-active`)).data
 
 // ── Quota API ──────────────────────────────────────────────────────────────────
 

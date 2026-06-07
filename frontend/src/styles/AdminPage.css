@@ -144,12 +144,37 @@
   --chart-red:   #ef4444;
 }
 
+.chart-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 36px;
+  height: 100px;
+  padding-bottom: 22px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.y-tick {
+  font-size: 10px;
+  color: var(--text-muted, #aaa);
+  line-height: 1;
+}
+
 .mini-bar-chart {
+  flex: 1;
   display: flex;
   align-items: flex-end;
   gap: 3px;
   height: 100px;
   padding: 0 4px;
+  min-width: 0;
 }
 
 .bar-col {
@@ -160,6 +185,7 @@
   justify-content: flex-end;
   gap: 4px;
   height: 100%;
+  min-width: 0;
 }
 
 .bar-fill {
@@ -175,6 +201,34 @@
   writing-mode: vertical-lr;
   transform: rotate(180deg);
   white-space: nowrap;
+}
+
+/* ── Activity range buttons ───────────────────── */
+.activity-range-btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.range-btn {
+  padding: 5px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid var(--border, #ddd);
+  background: transparent;
+  color: var(--text, #333);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.range-btn:hover {
+  background: var(--bg-hover, #f0f0f0);
+}
+
+.range-btn.active {
+  background: var(--chart-blue);
+  color: #fff;
+  border-color: var(--chart-blue);
 }
 
 .no-data {
@@ -250,6 +304,20 @@
 .badge-user {
   background: var(--bg-hover, #f5f5f7);
   color: var(--text-secondary, #666);
+}
+
+.badge-active {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.badge-banned {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.row-banned td {
+  opacity: 0.6;
 }
 
 /* ── Dark mode ───────────────────────────────── */
@@ -349,6 +417,12 @@
 .limit-btn--reset  { background: #fff7ed; color: #c2410c; }
 .limit-btn--reset:hover:not(:disabled)  { background: #ffedd5; }
 
+.limit-btn--ban    { background: #fef2f2; color: #dc2626; }
+.limit-btn--ban:hover:not(:disabled)    { background: #fee2e2; }
+
+.limit-btn--unban  { background: #f0fdf4; color: #15803d; }
+.limit-btn--unban:hover:not(:disabled)  { background: #dcfce7; }
+
 /* Inline edit input */
 .limit-inline-input {
   width: 90px;
@@ -393,6 +467,10 @@
 [data-theme="dark"] .limit-btn--cancel { background: var(--bg-hover); color: var(--text-secondary); }
 [data-theme="dark"] .limit-btn--edit   { background: #1e3a5f; color: #93c5fd; }
 [data-theme="dark"] .limit-btn--reset  { background: #431407; color: #fdba74; }
+[data-theme="dark"] .limit-btn--ban    { background: #450a0a; color: #f87171; }
+[data-theme="dark"] .limit-btn--unban  { background: #052e16; color: #4ade80; }
+[data-theme="dark"] .badge-active { background: #052e16; color: #4ade80; }
+[data-theme="dark"] .badge-banned { background: #450a0a; color: #f87171; }
 
 /* ── Responsive ──────────────────────────────── */
 @media (max-width: 640px) {
