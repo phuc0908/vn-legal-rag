@@ -282,8 +282,10 @@ export default function DieuDetailPage() {
                     {dieu.related.map((r) => (
                       <li key={r.mapc}>
                         <Link to={`/phap-dien/dieu/${encodeURIComponent(r.mapc)}`} className="related-link">
-                          <span className="related-text">{r.ten}</span>
-                          {r.vbqppl && <span className="related-vb">{r.vbqppl}</span>}
+                          <span className="related-vb">
+                            {formatCitation(r.vbqppl, r.demuc_ten) || r.ten}
+                          </span>
+                          <span className="related-text">{cleanDieuTen(r.ten)}</span>
                         </Link>
                       </li>
                     ))}
