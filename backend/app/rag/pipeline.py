@@ -176,6 +176,7 @@ class RAGPipeline:
                 preview = doc["content"][:120].replace("\n", " ")
                 print(f"  [DOC {i}] score={score:.4f} | id_vb={meta.get('id_vb')} | {preview}...")
 
+        retrieved_docs = self._dedup_docs(retrieved_docs)
         context = self._format_context(retrieved_docs)
         print(f"\n[CONTEXT] Độ dài context: {len(context)} ký tự")
 
@@ -208,7 +209,75 @@ class RAGPipeline:
             model_used=self.llm_manager.llm.__class__.__name__ if self.llm_manager else None,
         )
 
-    def _source_title(self, metadata: dict) -> str:
+    @staticmethod
+    def _dedup_docs(documents: List[dict]) -> List[dict]:
+        """Giữ lại chunk có score cao nhất cho mỗi dieu_mapc, loại bỏ trùng lặp."""
+        best: dict = {}
+        for doc in documents:
+            key = doc.get("metadata", {}).get("dieu_mapc") or doc["content"][:50]
+            if key not in best or doc["score"] > best[key]["score"]:
+                best[key] = doc
+        return sorted(best.values(), key=lambda x: x["score"], reverse=True)
+
+    @staticmethod
+    def _build_citation(content: str, metadata: dict) -> str:
+        """
+        Xây dựng citation pháp lý từ content chunk và metadata.
+
+        Ví dụ kết quả:
+          "Khoản 2 Điều 8 Luật Hôn nhân và gia đình 2015"
+          "Điều 8 Luật Hôn nhân và gia đình 2015"
+
+        Logic:
+          1. Parse vbqppl từ dòng "Văn bản: ..." cuối content
+          2. Lấy số điều + năm hiệu lực từ vbqppl
+          3. Lấy số khoản từ dòng đầu tiên dạng "N. " trong nội dung chunk
+          4. Ghép với de_muc từ metadata
+        """
+        de_muc = metadata.get("de_muc", "").strip()
+        if not de_muc:
+            return ""
+
+        # 1. Lấy vbqppl
+        m_vb = re.search(r"Văn bản:\s*(.+?)(?:\n|$)", content)
+        if not m_vb:
+            return ""
+        vbqppl = m_vb.group(1).strip()
+
+        # 2. Số điều và năm hiệu lực
+        m_dieu = re.search(r"Điều\s+(\d+)", vbqppl)
+        m_year = re.search(r"ngày\s+\d{1,2}/\d{1,2}/(\d{4})", vbqppl)
+        if not m_dieu or not m_year:
+            return ""
+        dieu_num = m_dieu.group(1)
+        year = m_year.group(1)
+
+        # 3. Số khoản: chỉ tìm ở dòng đầu tiên của nội dung (sau header/dieu_ten).
+        #    Giới hạn 1-2 chữ số để tránh match năm tháng (4 chữ số) trong ví dụ luật.
+        khoan_num = None
+        for line in content.split('\n'):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if '|' in stripped or stripped.startswith(('Chủ đề', 'Đề mục', 'Chương', 'Văn bản', 'Điều')):
+                continue
+            m = re.match(r'^(\d{1,2})\. ', stripped)
+            if m:
+                khoan_num = m.group(1)
+            break
+
+        # 4. Ghép citation
+        law_name = f"Luật {de_muc}"
+        if khoan_num:
+            return f"Khoản {khoan_num} Điều {dieu_num} {law_name} {year}"
+        return f"Điều {dieu_num} {law_name} {year}"
+
+    def _source_title(self, content: str, metadata: dict) -> str:
+        citation = self._build_citation(content, metadata)
+        if citation:
+            return citation
+
+        # Fallback cho dữ liệu không có cấu trúc pháp điển (loai_vb/so_hieu)
         parts = []
         loai_vb = metadata.get("loai_vb", "").strip()
         so_hieu = metadata.get("so_hieu", "").strip()
@@ -236,7 +305,8 @@ class RAGPipeline:
         seen = set()
         for doc in documents:
             metadata = doc.get("metadata", {})
-            title = self._source_title(metadata)
+            content = doc.get("content", "")
+            title = self._source_title(content, metadata)
             if title == "VB #?":
                 continue
 
@@ -247,7 +317,7 @@ class RAGPipeline:
 
             sources.append(SourceDocument(
                 title=title,
-                content=doc["content"][:500],
+                content=content[:500],
                 relevance_score=float(doc["score"]),
                 metadata=metadata,
                 url=metadata.get("url"),
@@ -258,6 +328,11 @@ class RAGPipeline:
         context_parts = []
         for i, doc in enumerate(documents, 1):
             meta = doc.get("metadata", {})
+            content = doc.get("content", "")
+
+            citation = self._build_citation(content, meta)
+
+            # Fallback fields cho dữ liệu không theo cấu trúc pháp điển
             loai_vb = meta.get("loai_vb", "")
             so_hieu = meta.get("so_hieu", "")
             ten_vb = meta.get("ten_vb", "")
@@ -265,31 +340,32 @@ class RAGPipeline:
             ten_chuong_cha = meta.get("ten_chuong_cha", "")
             tieu_de = meta.get("tieu_de", "")
             dieu_ten = meta.get("dieu_ten", "")
-
             chu_de = meta.get("chu_de", "")
             de_muc = meta.get("de_muc", "")
 
             lines = []
-            if chu_de:
-                lines.append(f"Chủ đề: {chu_de}")
-            if de_muc:
-                lines.append(f"Đề mục: {de_muc}")
-            if loai_vb or so_hieu:
-                lines.append(f"Văn bản: {loai_vb} {so_hieu}".strip())
-            if ten_vb:
-                lines.append(f"Tên: {ten_vb}")
-            if co_quan:
-                lines.append(f"Cơ quan: {co_quan}")
-            if ten_chuong_cha:
-                lines.append(f"Chương: {ten_chuong_cha}")
-            if tieu_de:
-                lines.append(f"Điều: {tieu_de}")
-            elif dieu_ten:
-                lines.append(f"Điều: {dieu_ten}")
+            if citation:
+                lines.append(f"Trích dẫn: {citation}")
+            else:
+                if chu_de:
+                    lines.append(f"Chủ đề: {chu_de}")
+                if de_muc:
+                    lines.append(f"Đề mục: {de_muc}")
+                if loai_vb or so_hieu:
+                    lines.append(f"Văn bản: {loai_vb} {so_hieu}".strip())
+                if ten_vb:
+                    lines.append(f"Tên: {ten_vb}")
+                if co_quan:
+                    lines.append(f"Cơ quan: {co_quan}")
+                if ten_chuong_cha:
+                    lines.append(f"Chương: {ten_chuong_cha}")
+                if tieu_de:
+                    lines.append(f"Điều: {tieu_de}")
+                elif dieu_ten:
+                    lines.append(f"Điều: {dieu_ten}")
 
             header = f"[Nguồn {i}] " + " | ".join(lines) if lines else f"[Nguồn {i}]"
-            content = doc["content"][:1500]
-            context_parts.append(f"{header}\n{content}")
+            context_parts.append(f"{header}\n{content[:1500]}")
         context = "\n\n---\n\n".join(context_parts)
         return context[:4000]
 
