@@ -32,13 +32,12 @@ def _sign(data: dict) -> str:
 def verify_webhook_signature(data: dict, received_sig: str) -> bool:
     """
     Xác minh chữ ký webhook từ PayOS.
-    data là body["data"] (nested object), không phải toàn bộ body.
-    PayOS tính signature từ: amount, code, desc, orderCode, status (sort alphabet).
+    data = body["data"]. PayOS tính signature trên TẤT CẢ field trong data,
+    sort theo alphabet — giống PayOS Python SDK dùng sorted(vars(webhookData).keys()).
     """
-    WEBHOOK_SIGN_FIELDS = ["amount", "code", "desc", "orderCode", "status"]
     payload = "&".join(
-        f"{k}={data.get(k, '')}"
-        for k in WEBHOOK_SIGN_FIELDS  # đã sort sẵn theo alphabet
+        f"{k}={'' if data[k] is None else data[k]}"
+        for k in sorted(data.keys())
     )
     expected = hmac.new(
         settings.PAYOS_CHECKSUM_KEY.encode(),
