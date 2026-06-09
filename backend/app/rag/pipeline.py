@@ -219,7 +219,7 @@ class RAGPipeline:
                 best[key] = doc
         return sorted(best.values(), key=lambda x: x["score"], reverse=True)
 
-    @staticmethod
+    @staticmethod       
     def _build_citation(content: str, metadata: dict) -> str:
         """
         Xây dựng citation pháp lý từ content chunk và metadata.
@@ -246,7 +246,7 @@ class RAGPipeline:
 
         # 2. Số điều và năm hiệu lực
         m_dieu = re.search(r"Điều\s+(\d+)", vbqppl)
-        m_year = re.search(r"ngày\s+\d{1,2}/\d{1,2}/(\d{4})", vbqppl)
+        m_year = re.search(r"số\s+\d+/(\d{4})/", vbqppl)
         if not m_dieu or not m_year:
             return ""
         dieu_num = m_dieu.group(1)

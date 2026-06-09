@@ -9,7 +9,7 @@ import '../styles/DieuDetailPage.css'
 function formatCitation(vbqppl, demucTen) {
   if (!vbqppl || !demucTen) return null
   const dieuMatch = vbqppl.match(/Điều\s+(\d+)/)
-  const yearMatch = vbqppl.match(/ngày\s+\d{1,2}\/\d{1,2}\/(\d{4})/)
+  const yearMatch = vbqppl.match(/số\s+\d+\/(\d{4})\//)
   if (!dieuMatch || !yearMatch) return null
   return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
 }
