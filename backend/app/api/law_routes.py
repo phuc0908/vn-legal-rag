@@ -138,9 +138,11 @@ def get_dieu(mapc: str):
     try:
         related = query_all(
             """
-            SELECT r.dieu_id2_id as mapc, d.ten, d.vbqppl
+            SELECT r.dieu_id2_id as mapc, d.ten, d.vbqppl,
+                   dm.ten as demuc_ten
             FROM pdmuclienquan r
             JOIN pddieu d ON r.dieu_id2_id = d.mapc
+            LEFT JOIN pddemuc dm ON d.demuc_id = dm.id
             WHERE r.dieu_id1_id = %s
             LIMIT 10
             """,

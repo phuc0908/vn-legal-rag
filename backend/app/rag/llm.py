@@ -68,7 +68,8 @@ NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
 - Nếu có văn bản pháp luật ở trên, ưu tiên trả lời dựa trên các văn bản đó và trích dẫn rõ nguồn.
 - Nếu văn bản tìm được không đủ hoặc không có, hãy trả lời dựa trên kiến thức pháp luật Việt Nam của bạn và ghi rõ "(dựa trên kiến thức pháp luật chung)".
 - Trả lời có cấu trúc rõ ràng, dùng tiêu đề in đậm và danh sách khi cần.
-- Chỉ dùng Markdown, không dùng thẻ HTML."""
+- Chỉ dùng Markdown, không dùng thẻ HTML.
+- Khi trích dẫn điều luật, dùng đúng định dạng: **"theo Khoản X Điều Y của [tên văn bản] [năm]"** — lấy thông tin từ dòng "Trích dẫn:" của nguồn tương ứng. Tuyệt đối không dùng mã số nội bộ (ví dụ: "8.4.LQ.8", "8.4.TL.1.2")."""
 
 # Giữ lại để tương thích với single-turn (khi không có history)
 PROMPT_TEMPLATE = """Bạn là một trợ lý pháp lý chuyên về **pháp luật Việt Nam**.
@@ -83,6 +84,7 @@ NGUYÊN TẮC TRẢ LỜI (bắt buộc tuân thủ):
 - Nếu văn bản tìm được không đủ hoặc không có, hãy trả lời dựa trên kiến thức pháp luật Việt Nam của bạn và ghi rõ "(dựa trên kiến thức pháp luật chung)".
 - Trả lời có cấu trúc rõ ràng, dùng tiêu đề in đậm và danh sách khi cần.
 - Chỉ dùng Markdown, không dùng thẻ HTML.
+- Khi trích dẫn điều luật, dùng đúng định dạng: **"theo Khoản X Điều Y của [tên văn bản] [năm]"** — lấy thông tin từ dòng "Trích dẫn:" của nguồn tương ứng. Tuyệt đối không dùng mã số nội bộ (ví dụ: "8.4.LQ.8", "8.4.TL.1.2").
 
 TRẢ LỜI:"""
 
