@@ -146,7 +146,7 @@ def toggle_active(user_id: int, admin=Depends(require_admin)):
         raise HTTPException(status_code=404, detail="User not found")
     if user["is_admin"]:
         raise HTTPException(status_code=400, detail="Không thể vô hiệu hóa tài khoản admin")
-    new_val = 0 if user["is_active"] else 1
+    new_val = 0 if (user["is_active"] != 0) else 1
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("UPDATE users SET is_active = %s WHERE id = %s", (new_val, user_id))
