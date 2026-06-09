@@ -37,11 +37,19 @@ const PLANS = [
   },
 ]
 
+function formatDate(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 export default function PricingPage() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState('')
+
+  const currentPlan = user?.subscription_plan || 'free'
+  const expiresAt = user?.subscription_expires_at
 
   const handleBuy = async (planId) => {
     if (!isAuthenticated) {
@@ -69,11 +77,25 @@ export default function PricingPage() {
           <p>Trải nghiệm đầy đủ hệ thống tra cứu pháp luật Việt Nam</p>
         </div>
 
+        {/* Banner gói đang dùng */}
+        {isAuthenticated && currentPlan !== 'free' && (
+          <div className="pricing-current-banner">
+            <span className="pricing-current-icon">
+              {currentPlan === 'pro' ? '⭐' : '✦'}
+            </span>
+            <span>
+              Bạn đang dùng <strong>Gói {currentPlan === 'pro' ? 'Pro' : 'Plus'}</strong>
+              {expiresAt && <> — hết hạn <strong>{formatDate(expiresAt)}</strong></>}
+            </span>
+          </div>
+        )}
+
         {error && <div className="pricing-error">{error}</div>}
 
         <div className="pricing-grid">
           {/* Free */}
-          <div className="plan-card plan-free">
+          <div className={`plan-card plan-free ${currentPlan === 'free' ? 'plan-card--active' : ''}`}>
+            {currentPlan === 'free' && <div className="plan-current-badge">Gói của bạn</div>}
             <div className="plan-name">Miễn phí</div>
             <div className="plan-price-wrap">
               <span className="plan-price">0₫</span>
@@ -85,35 +107,52 @@ export default function PricingPage() {
               <li>Lưu điều luật yêu thích</li>
             </ul>
             <button className="plan-btn plan-btn--current" disabled>
-              Gói hiện tại
+              {currentPlan === 'free' ? 'Gói hiện tại' : 'Gói cơ bản'}
             </button>
           </div>
 
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              className={`plan-card plan-${plan.color} ${plan.highlight ? 'plan-highlight' : ''}`}
-            >
-              {plan.badge && <div className="plan-badge">{plan.badge}</div>}
-              <div className="plan-name">{plan.name}</div>
-              <div className="plan-price-wrap">
-                <span className="plan-price">{plan.price}</span>
-                <span className="plan-period">{plan.period}</span>
-              </div>
-              <ul className="plan-features">
-                {plan.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <button
-                className={`plan-btn plan-btn--buy plan-btn--${plan.color}`}
-                onClick={() => handleBuy(plan.id)}
-                disabled={!!loading}
+          {PLANS.map((plan) => {
+            const isCurrent = currentPlan === plan.id
+            return (
+              <div
+                key={plan.id}
+                className={`plan-card plan-${plan.color} ${plan.highlight ? 'plan-highlight' : ''} ${isCurrent ? 'plan-card--active' : ''}`}
               >
-                {loading === plan.id ? 'Đang xử lý...' : 'Mua ngay'}
-              </button>
-            </div>
-          ))}
+                {isCurrent
+                  ? <div className="plan-current-badge">Gói của bạn</div>
+                  : plan.badge && <div className="plan-badge">{plan.badge}</div>
+                }
+                <div className="plan-name">{plan.name}</div>
+                <div className="plan-price-wrap">
+                  <span className="plan-price">{plan.price}</span>
+                  <span className="plan-period">{plan.period}</span>
+                </div>
+                {isCurrent && expiresAt && (
+                  <div className="plan-expires">Hết hạn: {formatDate(expiresAt)}</div>
+                )}
+                <ul className="plan-features">
+                  {plan.features.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+                {isCurrent ? (
+                  <button className="plan-btn plan-btn--current" disabled>
+                    Gói hiện tại
+                  </button>
+                ) : (
+                  <button
+                    className={`plan-btn plan-btn--buy plan-btn--${plan.color}`}
+                    onClick={() => handleBuy(plan.id)}
+                    disabled={!!loading}
+                  >
+                    {loading === plan.id
+                      ? 'Đang xử lý...'
+                      : currentPlan !== 'free' ? 'Gia hạn / Nâng cấp' : 'Mua ngay'}
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         <p className="pricing-note">

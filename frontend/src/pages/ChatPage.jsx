@@ -102,8 +102,8 @@ export default function ChatPage() {
             <Link to="/" className="chat-header-logo">⚖️</Link>
             <h1>Tư vấn Pháp lý AI</h1>
           </div>
-          <ThemeToggle />
           {isAuthenticated && <PlanChip plan={user?.subscription_plan} />}
+          <ThemeToggle />
           <Link to="/" className="chat-home-link">← Trang chủ</Link>
         </div>
         {isChatLoading ? (
