@@ -244,7 +244,11 @@ class RAGPipeline:
             return ""
         vbqppl = m_vb.group(1).strip()
 
-        # 2. Số điều và năm hiệu lực
+        # 2. Chỉ build citation kiểu "Luật X năm Y" khi vbqppl thực sự là Luật/Bộ luật
+        if not re.search(r'\bLuật\b|\bBộ luật\b', vbqppl):
+            return ""
+
+        # 3. Số điều và năm hiệu lực
         m_dieu = re.search(r"Điều\s+(\d+)", vbqppl)
         m_year = re.search(r"số\s+\d+/(\d{4})/", vbqppl)
         if not m_dieu or not m_year:
@@ -252,7 +256,7 @@ class RAGPipeline:
         dieu_num = m_dieu.group(1)
         year = m_year.group(1)
 
-        # 3. Số khoản: chỉ tìm ở dòng đầu tiên của nội dung (sau header/dieu_ten).
+        # 4. Số khoản: chỉ tìm ở dòng đầu tiên của nội dung (sau header/dieu_ten).
         #    Giới hạn 1-2 chữ số để tránh match năm tháng (4 chữ số) trong ví dụ luật.
         khoan_num = None
         for line in content.split('\n'):
@@ -266,7 +270,7 @@ class RAGPipeline:
                 khoan_num = m.group(1)
             break
 
-        # 4. Ghép citation
+        # 5. Ghép citation
         law_name = f"Luật {de_muc}"
         if khoan_num:
             return f"Khoản {khoan_num} Điều {dieu_num} {law_name} {year}"
