@@ -13,7 +13,10 @@ export default function Header() {
     { to: '/', label: 'Trang chủ' },
     { to: '/phap-dien', label: 'Pháp điển' },
     { to: '/tu-van', label: 'Tư vấn AI' },
+    { to: '/bang-gia', label: 'Bảng giá' },
   ]
+
+  const isFreeUser = isAuthenticated && (!user?.subscription_plan || user.subscription_plan === 'free')
 
   return (
     <header className="site-header">
@@ -54,6 +57,9 @@ export default function Header() {
           >
             ★ Đã lưu
           </Link>
+          {isFreeUser && (
+            <Link to="/bang-gia" className="upgrade-btn">✦ Nâng cấp</Link>
+          )}
           {isAuthenticated ? (
             <div className="user-profile">
               {user?.is_admin && (

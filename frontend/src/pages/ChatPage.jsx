@@ -8,10 +8,27 @@ import { useChatStore } from '../store/chatStore'
 import ThemeToggle from '../components/ThemeToggle'
 import '../styles/ChatPage.css'
 
+const PLAN_LABELS = {
+  plus: { label: '✦ Plus', className: 'plan-chip plan-chip--plus' },
+  pro:  { label: '⭐ Pro',  className: 'plan-chip plan-chip--pro'  },
+}
+
+function PlanChip({ plan }) {
+  if (plan && plan !== 'free') {
+    const p = PLAN_LABELS[plan]
+    return <span className={p.className}>{p.label}</span>
+  }
+  return (
+    <Link to="/bang-gia" className="plan-chip plan-chip--free">
+      Miễn phí · Nâng cấp
+    </Link>
+  )
+}
+
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [searchParams] = useSearchParams()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const { 
     conversations, 
     currentConversationId, 
@@ -86,6 +103,7 @@ export default function ChatPage() {
             <h1>Tư vấn Pháp lý AI</h1>
           </div>
           <ThemeToggle />
+          {isAuthenticated && <PlanChip plan={user?.subscription_plan} />}
           <Link to="/" className="chat-home-link">← Trang chủ</Link>
         </div>
         {isChatLoading ? (

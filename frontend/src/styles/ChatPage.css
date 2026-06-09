@@ -217,3 +217,37 @@
   color: var(--text-secondary);
   font-size: 15px;
 }
+
+/* ── Plan chip in chat header ── */
+.plan-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+  letter-spacing: 0.2px;
+}
+.plan-chip--plus {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #fff;
+}
+.plan-chip--pro {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+.plan-chip--free {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  transition: color 0.15s, border-color 0.15s;
+}
+.plan-chip--free:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .plan-chip--free { display: none; }
+}

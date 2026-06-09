@@ -40,23 +40,29 @@ async def create_payment(plan: str, current_user=Depends(get_current_user)):
 async def payos_webhook(request: Request):
     """
     Endpoint nhận webhook từ PayOS sau khi thanh toán.
-    PayOS gọi POST với JSON body chứa thông tin giao dịch + signature.
-    URL này phải public (HTTPS) và được cấu hình trong PayOS dashboard.
+    PayOS tính signature trên body["data"], không phải toàn bộ body.
     """
     body = await request.json()
+    print(f"[WEBHOOK] PayOS gọi: {body}")
 
-    # Xác minh chữ ký
-    received_sig = body.pop("signature", "")
-    if not verify_webhook_signature(body, received_sig):
+    received_sig = body.get("signature", "")
+    webhook_data = body.get("data", {})
+
+    # Verify signature trên data object
+    if not verify_webhook_signature(webhook_data, received_sig):
+        print(f"[WEBHOOK] Signature không khớp. data={webhook_data}")
         raise HTTPException(400, detail="Chữ ký không hợp lệ")
 
     # Chỉ xử lý khi thanh toán thành công
     if body.get("code") != "00":
-        svc.cancel_transaction(str(body.get("orderCode", "")))
+        order_code = str(webhook_data.get("orderCode", ""))
+        if order_code:
+            svc.cancel_transaction(order_code)
         return {"status": "ignored"}
 
-    order_code = str(body.get("orderCode", ""))
+    order_code = str(webhook_data.get("orderCode", ""))
     success = svc.confirm_payment(order_code)
+    print(f"[WEBHOOK] order_code={order_code} success={success}")
 
     return {"status": "ok" if success else "already_processed"}
 
