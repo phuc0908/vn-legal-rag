@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import {
@@ -308,9 +308,12 @@ function LimitsTab() {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
+const VALID_TABS = ['overview', 'activity', 'users', 'content', 'limits']
+
 export default function AdminPage() {
   const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [overview, setOverview] = useState(null)
   const [topUsers, setTopUsers] = useState([])
@@ -319,7 +322,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [activeTab, setActiveTab] = useState('overview')
+  const rawTab = searchParams.get('tab')
+  const activeTab = VALID_TABS.includes(rawTab) ? rawTab : 'overview'
+  const setActiveTab = (tab) => setSearchParams({ tab }, { replace: true })
+
   const [activityDays, setActivityDays] = useState(30)
   const [activityData, setActivityData] = useState(null)
   const [activityLoading, setActivityLoading] = useState(false)
