@@ -211,10 +211,10 @@ class RAGPipeline:
 
     @staticmethod
     def _dedup_docs(documents: List[dict]) -> List[dict]:
-        """Giữ lại chunk có score cao nhất cho mỗi dieu_mapc, loại bỏ trùng lặp."""
+        """Loại bỏ chunk trùng nội dung; giữ nguyên nhiều khoản của cùng một điều."""
         best: dict = {}
         for doc in documents:
-            key = doc.get("metadata", {}).get("dieu_mapc") or doc["content"][:50]
+            key = doc["content"]
             if key not in best or doc["score"] > best[key]["score"]:
                 best[key] = doc
         return sorted(best.values(), key=lambda x: x["score"], reverse=True)

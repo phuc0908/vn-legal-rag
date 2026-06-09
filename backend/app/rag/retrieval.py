@@ -246,7 +246,7 @@ class HybridRetriever:
         docs_by_id: Dict[str, Dict] = {}
 
         def doc_id(doc: Dict) -> str:
-            return doc.get("metadata", {}).get("dieu_mapc") or doc["content"][:50]
+            return doc["content"]
 
         for rank, doc in enumerate(vector_results):
             did = doc_id(doc)
