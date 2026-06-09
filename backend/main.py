@@ -11,6 +11,7 @@ from app.api.conversation_routes import router as conv_router
 from app.api.bookmark_routes import router as bookmark_router
 from app.api.history_routes import router as history_router
 from app.api.admin_routes import router as admin_router
+from app.payment.routes import router as payment_router
 from app.db.database import get_db
 from app.rag.pipeline import get_rag_pipeline
 import uvicorn
@@ -33,6 +34,19 @@ async def lifespan(app: FastAPI):
             _run_migration(cur, "ALTER TABLE conversations ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
             _run_migration(cur, "ALTER TABLE messages ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0")
             _run_migration(cur, "ALTER TABLE users ADD COLUMN daily_question_limit INT NULL DEFAULT NULL")
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN subscription_plan ENUM('free','plus','pro') NOT NULL DEFAULT 'free'")
+            _run_migration(cur, "ALTER TABLE users ADD COLUMN subscription_expires_at DATETIME NULL")
+            _run_migration(cur, """CREATE TABLE IF NOT EXISTS transactions (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                user_id     INT NOT NULL,
+                order_code  VARCHAR(64) UNIQUE NOT NULL,
+                plan        ENUM('plus','pro') NOT NULL,
+                amount      INT NOT NULL,
+                status      ENUM('pending','paid','cancelled','expired') NOT NULL DEFAULT 'pending',
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                paid_at     DATETIME NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )""")
             _run_migration(cur, """CREATE TABLE IF NOT EXISTS system_settings (
                 `key` VARCHAR(50) PRIMARY KEY,
                 `value` VARCHAR(255) NOT NULL,
@@ -78,6 +92,7 @@ app.include_router(conv_router, prefix="/api")
 app.include_router(bookmark_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(payment_router, prefix="/api")
 
 # Serve frontend static file
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")

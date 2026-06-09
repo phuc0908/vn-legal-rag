@@ -104,6 +104,8 @@ class UserOut(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     is_admin: bool = False
+    subscription_plan: str = "free"
+    subscription_expires_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

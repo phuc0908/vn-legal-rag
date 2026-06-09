@@ -81,6 +81,13 @@ export const setUserDailyLimit   = async (userId, limit) => (await apiClient.put
 export const resetUserDailyLimit  = async (userId) => (await apiClient.delete(`/admin/users/${userId}/limit`)).data
 export const toggleUserActive     = async (userId) => (await apiClient.patch(`/admin/users/${userId}/toggle-active`)).data
 
+// ── Payment / Subscription API ────────────────────────────────────────────────
+
+export const getPlans            = async () => (await apiClient.get('/subscription/plans')).data
+export const createPayment       = async (plan) => (await apiClient.post(`/subscription/create/${plan}`)).data
+export const getMySubscription   = async () => (await apiClient.get('/subscription/my-subscription')).data
+export const getMyTransactions   = async () => (await apiClient.get('/subscription/my-transactions')).data
+
 // ── Quota API ──────────────────────────────────────────────────────────────────
 
 export const getMyQuota = async () => (await apiClient.get('/quota')).data
