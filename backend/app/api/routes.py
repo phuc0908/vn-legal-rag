@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from typing import Optional
+import json
 import traceback
 from app.models.schemas import QueryRequest, QueryResponse, HealthResponse, ChatTurn, QuotaUsage
 from app.rag.pipeline import get_rag_pipeline
@@ -34,6 +36,72 @@ def _count_today_questions(user_id: int) -> int:
         (user_id,)
     )
     return result["cnt"] if result else 0
+
+
+def _enforce_quota(current_user: dict) -> Optional[int]:
+    """Kiểm tra giới hạn câu hỏi/ngày. Trả về effective_limit, raise 429 nếu hết lượt."""
+    if current_user.get("is_admin"):
+        return None
+    effective_limit = _get_effective_limit(current_user["id"])
+    if effective_limit is not None:
+        used_count = _count_today_questions(current_user["id"])
+        if used_count >= effective_limit:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "message": "Bạn đã đạt giới hạn câu hỏi hôm nay",
+                    "limit": effective_limit,
+                    "used": used_count,
+                }
+            )
+    return effective_limit
+
+
+def _load_history(request: QueryRequest) -> QueryRequest:
+    """Nạp lịch sử hội thoại từ DB (tối đa 3 lượt = 6 messages gần nhất) vào request."""
+    if request.conversation_id and request.chat_history is None:
+        try:
+            rows = query_all(
+                "SELECT role, content FROM messages WHERE conversation_id = %s AND is_deleted = 0 "
+                "ORDER BY created_at DESC LIMIT 6",
+                (request.conversation_id,)
+            )
+            if rows:
+                history = [ChatTurn(role=r["role"], content=r["content"]) for r in reversed(rows)]
+                request = request.model_copy(update={"chat_history": history})
+        except Exception as hist_err:
+            print(f"Warning: không tải được lịch sử hội thoại: {hist_err}")
+    return request
+
+
+def _persist_turn(request: QueryRequest, answer: str):
+    """Lưu cặp message user/assistant và cập nhật tiêu đề nếu là câu đầu tiên."""
+    if not request.conversation_id:
+        return
+    try:
+        existing = query_one(
+            "SELECT COUNT(*) as cnt FROM messages WHERE conversation_id = %s AND is_deleted = 0",
+            (request.conversation_id,)
+        )
+        is_first_message = existing["cnt"] == 0
+        save_message(request.conversation_id, "user", request.query)
+        save_message(request.conversation_id, "assistant", answer)
+        if is_first_message:
+            update_conversation_title(request.conversation_id, request.query[:60])
+    except Exception as db_err:
+        print(f"Warning: failed to save messages to DB: {db_err}")
+
+
+def _build_usage(current_user: dict, effective_limit: Optional[int]) -> Optional[QuotaUsage]:
+    """Tính thông tin quota sau khi đã lưu câu hỏi (chỉ cho user thường có giới hạn)."""
+    if current_user.get("is_admin") or effective_limit is None:
+        return None
+    used_after = _count_today_questions(current_user["id"])
+    return QuotaUsage(
+        used=used_after,
+        limit=effective_limit,
+        remaining=max(0, effective_limit - used_after),
+    )
 
 
 @router.get("/quota")
@@ -129,6 +197,52 @@ async def query(request: QueryRequest, current_user: dict = Depends(get_current_
             status_code=500,
             detail=f"Error processing query: {str(e)}"
         )
+
+
+def _sse(event: str, data: dict) -> str:
+    """Định dạng một sự kiện Server-Sent Events."""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@router.post("/query/stream")
+async def query_stream(request: QueryRequest, current_user: dict = Depends(get_current_user)):
+    """Xử lý truy vấn pháp lý và stream câu trả lời theo từng đoạn (Server-Sent Events)."""
+    # Kiểm tra quota trước khi mở stream để có thể trả về 429 chuẩn
+    effective_limit = _enforce_quota(current_user)
+
+    pipeline = get_rag_pipeline()
+    if pipeline is None:
+        raise HTTPException(status_code=500, detail="RAG pipeline not initialized")
+
+    prepared_request = _load_history(request)
+
+    def event_generator():
+        try:
+            for ev_type, payload in pipeline.process_query_stream(prepared_request):
+                if ev_type == "sources":
+                    yield _sse("sources", {"sources": payload})
+                elif ev_type == "token":
+                    yield _sse("token", {"text": payload})
+                elif ev_type == "done":
+                    _persist_turn(prepared_request, payload.get("answer", ""))
+                    usage = _build_usage(current_user, effective_limit)
+                    yield _sse("done", {
+                        "model_used": payload.get("model_used"),
+                        "usage": usage.model_dump() if usage else None,
+                    })
+        except Exception as e:
+            traceback.print_exc()
+            yield _sse("error", {"message": f"Error processing query: {str(e)}"})
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # tắt buffering của nginx/proxy
+        },
+    )
 
 
 @router.get("/health", response_model=HealthResponse)

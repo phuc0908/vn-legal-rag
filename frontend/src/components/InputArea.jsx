@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { sendMessage, getChude, getMyQuota } from '../services/api'
+import { getChude, getMyQuota } from '../services/api'
 import { useChatStore } from '../store/chatStore'
 import { useAuthStore } from '../store/authStore'
 import '../styles/InputArea.css'
@@ -11,14 +11,17 @@ const MODULES = [
 
 export default function InputArea({ conversation, initialQuery = '' }) {
   const [input, setInput] = useState(initialQuery)
-  const [loading, setLoading] = useState(false)
   const [chudeList, setChudeList] = useState([])
   const [selectedChudeId, setSelectedChudeId] = useState('')
   const [selectedChudeTen, setSelectedChudeTen] = useState('')
   const [activeModule, setActiveModule] = useState(null)
   const [quota, setQuota] = useState(null)
-  const { addMessage, updateTitle } = useChatStore()
+  const sendQuery = useChatStore((s) => s.sendQuery)
+  const pending = useChatStore((s) => s.pending)
   const { user } = useAuthStore()
+
+  // Đang chờ/stream câu trả lời cho ĐÚNG hội thoại hiện tại
+  const loading = conversation ? Boolean(pending[conversation.id]) : false
 
   useEffect(() => {
     getChude()
@@ -59,53 +62,30 @@ export default function InputArea({ conversation, initialQuery = '' }) {
   const isQuotaExceeded = quota && !quota.is_admin && quota.limit !== null && quota.remaining === 0
 
   const handleSend = async () => {
-    if (!input.trim() || !conversation || isQuotaExceeded) return
+    if (!input.trim() || !conversation || isQuotaExceeded || loading) return
 
     const trimmed = input.trim()
+    const conversationId = conversation.id
+    setInput('')
 
-    if (conversation.messages.length === 0) {
-      updateTitle(conversation.id, trimmed.substring(0, 45))
+    // Dự đoán quota giảm 1 ngay (sẽ được đồng bộ lại theo kết quả thực tế)
+    if (quota && !quota.is_admin && quota.limit !== null) {
+      setQuota(q => ({ ...q, used: q.used + 1, remaining: Math.max(0, q.remaining - 1) }))
     }
 
-    addMessage(conversation.id, { role: 'user', content: trimmed })
-    setInput('')
-    setLoading(true)
+    // Giao việc gửi/stream cho store — chạy độc lập với component,
+    // nên người dùng vẫn có thể đổi hội thoại hoặc chuyển trang.
+    const result = await sendQuery({
+      conversationId,
+      query: trimmed,
+      chuDeId: activeModule ? null : (selectedChudeId || null),
+      module: activeModule || null,
+    })
 
-    try {
-      const response = await sendMessage(
-        trimmed,
-        conversation.id,
-        activeModule ? null : (selectedChudeId || null),
-        activeModule || null,
-      )
-      addMessage(conversation.id, {
-        role: 'assistant',
-        content: response.answer,
-        sources: response.sources,
-      })
-      // Cập nhật quota từ response hoặc tự tính
-      if (response.usage) {
-        setQuota(q => q ? { ...q, used: response.usage.used, remaining: response.usage.remaining } : q)
-      } else if (quota && !quota.is_admin && quota.limit !== null) {
-        setQuota(q => ({ ...q, used: q.used + 1, remaining: Math.max(0, q.remaining - 1) }))
-      }
-    } catch (error) {
-      const status = error.response?.status
-      const detail = error.response?.data?.detail
-      if (status === 429 && detail?.limit) {
-        setQuota(q => q ? { ...q, remaining: 0, used: detail.used ?? q.used } : q)
-        addMessage(conversation.id, {
-          role: 'assistant',
-          content: `Bạn đã sử dụng hết ${detail.limit} câu hỏi cho hôm nay. Vui lòng quay lại vào ngày mai.`,
-        })
-      } else {
-        addMessage(conversation.id, {
-          role: 'assistant',
-          content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại.',
-        })
-      }
-    } finally {
-      setLoading(false)
+    if (result?.usage) {
+      setQuota(q => q ? { ...q, used: result.usage.used, remaining: result.usage.remaining } : q)
+    } else if (result?.status === 429 && result.detail?.limit) {
+      setQuota(q => q ? { ...q, remaining: 0, used: result.detail.used ?? q.used } : q)
     }
   }
 

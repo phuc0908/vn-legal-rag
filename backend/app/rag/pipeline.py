@@ -106,30 +106,8 @@ class RAGPipeline:
             + self._suggestions_for_short_query(request)
         )
 
-    def process_query(self, request: QueryRequest) -> QueryResponse:
-        start_time = time.time()
-        sep = "-" * 60
-
-        print(f"\n{sep}")
-        print(f"[QUERY] {request.query}")
-        print(
-            f"[QUERY] conversation_id={request.conversation_id} | "
-            f"top_k={request.top_k} | chu_de_id={request.chu_de_id} | module={request.module}"
-        )
-
-        if self._is_lightweight_query(request.query):
-            print("[QUERY] Câu nhập ngắn/không phải câu hỏi pháp lý - bỏ qua retrieval")
-            total_time = time.time() - start_time
-            print(f"\n[DONE] Tổng thời gian xử lý: {total_time:.2f}s")
-            print(f"{sep}\n")
-            return QueryResponse(
-                query=request.query,
-                answer=self._lightweight_answer(request),
-                sources=[],
-                processing_time=total_time,
-                model_used=None,
-            )
-
+    def _prepare_context(self, request: QueryRequest):
+        """Chạy router + retrieval, trả về (context, sources, retrieved_docs)."""
         search_query = request.query
 
         chu_de_id = request.chu_de_id
@@ -180,6 +158,35 @@ class RAGPipeline:
         context = self._format_context(retrieved_docs)
         print(f"\n[CONTEXT] Độ dài context: {len(context)} ký tự")
 
+        sources = self._build_sources(retrieved_docs)
+        return context, sources, retrieved_docs
+
+    def process_query(self, request: QueryRequest) -> QueryResponse:
+        start_time = time.time()
+        sep = "-" * 60
+
+        print(f"\n{sep}")
+        print(f"[QUERY] {request.query}")
+        print(
+            f"[QUERY] conversation_id={request.conversation_id} | "
+            f"top_k={request.top_k} | chu_de_id={request.chu_de_id} | module={request.module}"
+        )
+
+        if self._is_lightweight_query(request.query):
+            print("[QUERY] Câu nhập ngắn/không phải câu hỏi pháp lý - bỏ qua retrieval")
+            total_time = time.time() - start_time
+            print(f"\n[DONE] Tổng thời gian xử lý: {total_time:.2f}s")
+            print(f"{sep}\n")
+            return QueryResponse(
+                query=request.query,
+                answer=self._lightweight_answer(request),
+                sources=[],
+                processing_time=total_time,
+                model_used=None,
+            )
+
+        context, sources, retrieved_docs = self._prepare_context(request)
+
         if not self.llm_manager:
             answer = "LLM chưa được cấu hình."
             print("[LLM] WARN: LLM manager chưa khởi tạo")
@@ -195,8 +202,6 @@ class RAGPipeline:
             print(f"[LLM] Nhận phản hồi sau {llm_time:.2f}s - độ dài câu trả lời: {len(answer)} ký tự")
             print(f"[LLM] Preview: {answer[:200].replace(chr(10), ' ')}...")
 
-        sources = self._build_sources(retrieved_docs)
-
         total_time = time.time() - start_time
         print(f"\n[DONE] Tổng thời gian xử lý: {total_time:.2f}s")
         print(f"{sep}\n")
@@ -208,6 +213,61 @@ class RAGPipeline:
             processing_time=total_time,
             model_used=self.llm_manager.llm.__class__.__name__ if self.llm_manager else None,
         )
+
+    def process_query_stream(self, request: QueryRequest):
+        """Phiên bản streaming của process_query.
+
+        Yield các tuple sự kiện:
+          ("sources", [source_dict, ...])  - phát ngay sau khi retrieval xong
+          ("token", "đoạn text")           - từng đoạn câu trả lời từ LLM
+          ("done", {"answer": str, "model_used": str|None})
+        """
+        start_time = time.time()
+        sep = "-" * 60
+
+        print(f"\n{sep}")
+        print(f"[QUERY-STREAM] {request.query}")
+        print(
+            f"[QUERY-STREAM] conversation_id={request.conversation_id} | "
+            f"top_k={request.top_k} | chu_de_id={request.chu_de_id} | module={request.module}"
+        )
+
+        if self._is_lightweight_query(request.query):
+            print("[QUERY-STREAM] Câu nhập ngắn - bỏ qua retrieval")
+            answer = self._lightweight_answer(request)
+            yield ("sources", [])
+            yield ("token", answer)
+            yield ("done", {"answer": answer, "model_used": None})
+            return
+
+        context, sources, _ = self._prepare_context(request)
+        yield ("sources", [s.model_dump() for s in sources])
+
+        if not self.llm_manager:
+            answer = "LLM chưa được cấu hình."
+            print("[LLM] WARN: LLM manager chưa khởi tạo")
+            yield ("token", answer)
+            yield ("done", {"answer": answer, "model_used": None})
+            return
+
+        print(f"[LLM] Stream prompt tới {self.llm_manager.llm.__class__.__name__}...")
+        t1 = time.time()
+        chunks: List[str] = []
+        for chunk in self.llm_manager.generate_answer_stream(
+            request.query, context, history=request.chat_history
+        ):
+            chunks.append(chunk)
+            yield ("token", chunk)
+        answer = "".join(chunks)
+        print(f"[LLM] Stream xong sau {time.time() - t1:.2f}s - độ dài: {len(answer)} ký tự")
+
+        total_time = time.time() - start_time
+        print(f"\n[DONE] Tổng thời gian xử lý: {total_time:.2f}s")
+        print(f"{sep}\n")
+        yield ("done", {
+            "answer": answer,
+            "model_used": self.llm_manager.llm.__class__.__name__,
+        })
 
     @staticmethod
     def _dedup_docs(documents: List[dict]) -> List[dict]:

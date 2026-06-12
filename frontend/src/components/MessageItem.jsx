@@ -4,6 +4,8 @@ import '../styles/MessageItem.css'
 
 export default function MessageItem({ message }) {
   const isUser = message.role === 'user'
+  // Đang chờ token đầu tiên: hiện vòng xoay "đang soạn"
+  const isThinking = message.streaming && !message.content
 
   return (
     <div className={`message-item ${isUser ? 'user' : 'assistant'}`}>
@@ -11,8 +13,14 @@ export default function MessageItem({ message }) {
       <div className="message-content">
         {isUser ? (
           <p>{message.content}</p>
+        ) : isThinking ? (
+          <div className="typing-indicator" aria-label="Đang soạn câu trả lời">
+            <span></span><span></span><span></span>
+          </div>
         ) : (
-          <ReactMarkdown>{message.content}</ReactMarkdown>
+          <div className={message.streaming ? 'streaming-text' : undefined}>
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
         )}
         {message.sources && message.sources.length > 0 && (
           <div className="message-sources">

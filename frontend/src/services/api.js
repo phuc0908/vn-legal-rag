@@ -139,6 +139,83 @@ export const sendMessage = async (message, conversationId, chuDeId = null, modul
   }
 }
 
+/**
+ * Stream a legal query answer via Server-Sent Events.
+ * Uses fetch (not axios) so we can read the response body incrementally.
+ *
+ * handlers: { onSources(sources[]), onToken(text), onDone({model_used, usage}), onError({message}) }
+ * Returns the parsed "done" payload, or throws on HTTP error (e.g. 429).
+ */
+export const streamMessage = async (message, conversationId, chuDeId = null, module = null, handlers = {}) => {
+  const { onSources, onToken, onDone, onError } = handlers
+
+  const body = {
+    query: message,
+    conversation_id: conversationId ? String(conversationId) : undefined,
+  }
+  if (chuDeId) body.chu_de_id = String(chuDeId)
+  if (module) body.module = module
+
+  const token = useAuthStore.getState().token
+  const resp = await fetch(`${API_BASE_URL}/query/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!resp.ok) {
+    if (resp.status === 401) useAuthStore.getState().logout()
+    let detail
+    try { detail = (await resp.json()).detail } catch { /* non-JSON body */ }
+    const err = new Error('Stream request failed')
+    err.status = resp.status
+    err.detail = detail
+    throw err
+  }
+
+  const reader = resp.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let donePayload = null
+
+  const dispatch = (rawEvent) => {
+    let event = 'message'
+    const dataLines = []
+    for (const line of rawEvent.split('\n')) {
+      if (line.startsWith('event:')) event = line.slice(6).trim()
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart())
+    }
+    if (dataLines.length === 0) return
+    let parsed
+    try { parsed = JSON.parse(dataLines.join('\n')) } catch { return }
+
+    if (event === 'sources') onSources?.(parsed.sources || [])
+    else if (event === 'token') onToken?.(parsed.text || '')
+    else if (event === 'done') { donePayload = parsed; onDone?.(parsed) }
+    else if (event === 'error') onError?.(parsed)
+  }
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let sep
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const rawEvent = buffer.slice(0, sep)
+      buffer = buffer.slice(sep + 2)
+      if (rawEvent.trim()) dispatch(rawEvent)
+    }
+  }
+  // flush any trailing event without a final blank line
+  if (buffer.trim()) dispatch(buffer)
+
+  return donePayload
+}
+
 // ── Bookmark API ───────────────────────────────────────────────────────────────
 
 export const getBookmarks = async () => {

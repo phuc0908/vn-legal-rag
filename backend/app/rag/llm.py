@@ -1,7 +1,8 @@
+import json
 import os
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Iterator, Optional
 import requests
 from app.core.config import settings
 
@@ -101,13 +102,9 @@ class GroqLLM:
         self._model = _read_env_key("LLM_MODEL") or settings.LLM_MODEL
         self._url = "https://api.groq.com/openai/v1/chat/completions"
 
-    def _call(self, prompt: str = None, messages: list = None,
-              temperature: float = None, max_tokens: int = None) -> str:
-        """Gọi Groq API.
-
-        Truyền `messages` để dùng multi-turn (system + history + user).
-        Truyền `prompt` để dùng single-turn đơn giản.
-        """
+    def _build_payload(self, prompt: str = None, messages: list = None,
+                       temperature: float = None, max_tokens: int = None,
+                       stream: bool = False) -> tuple:
         if messages is None:
             messages = [{"role": "user", "content": prompt}]
         headers = {
@@ -119,12 +116,48 @@ class GroqLLM:
             "messages": messages,
             "temperature": temperature if temperature is not None else settings.LLM_TEMPERATURE,
             "max_tokens": max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS,
+            "stream": stream,
         }
+        return headers, payload
+
+    def _call(self, prompt: str = None, messages: list = None,
+              temperature: float = None, max_tokens: int = None) -> str:
+        """Gọi Groq API.
+
+        Truyền `messages` để dùng multi-turn (system + history + user).
+        Truyền `prompt` để dùng single-turn đơn giản.
+        """
+        headers, payload = self._build_payload(prompt, messages, temperature, max_tokens)
         resp = requests.post(self._url, json=payload, headers=headers, timeout=60)
         if not resp.ok:
             print(f"[GROQ ERROR] {resp.status_code}: {resp.text}")
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"].strip()
+
+    def _call_stream(self, prompt: str = None, messages: list = None,
+                     temperature: float = None, max_tokens: int = None) -> Iterator[str]:
+        """Gọi Groq API ở chế độ streaming, yield từng đoạn text (delta)."""
+        headers, payload = self._build_payload(prompt, messages, temperature, max_tokens, stream=True)
+        with requests.post(self._url, json=payload, headers=headers, timeout=60, stream=True) as resp:
+            if not resp.ok:
+                print(f"[GROQ ERROR] {resp.status_code}: {resp.text}")
+            resp.raise_for_status()
+            # text/event-stream không khai báo charset -> requests mặc định Latin-1,
+            # làm hỏng tiếng Việt (mojibake). Ép UTF-8 trước khi giải mã từng dòng.
+            resp.encoding = "utf-8"
+            for line in resp.iter_lines(decode_unicode=True):
+                if not line or not line.startswith("data:"):
+                    continue
+                data = line[len("data:"):].strip()
+                if data == "[DONE]":
+                    break
+                try:
+                    obj = json.loads(data)
+                    delta = obj["choices"][0]["delta"].get("content")
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    continue
+                if delta:
+                    yield delta
 
     def generate(self, prompt: str = None, messages: list = None) -> str:
         try:
@@ -152,27 +185,49 @@ class GroqLLM:
         except Exception:
             return query
 
+    def _build_chat_messages(self, query: str, context: str, history: list = None) -> Optional[list]:
+        """Dựng danh sách messages multi-turn nếu có history; trả None nếu single-turn."""
+        if not history:
+            return None
+        # System message chứa RAG context và nguyên tắc trả lời
+        messages = [{"role": "system", "content": SYSTEM_LEGAL_PROMPT.format(context=context)}]
+        # Thêm các lượt hội thoại trước (giới hạn MAX_HISTORY_TURNS lượt)
+        for turn in history[-(MAX_HISTORY_TURNS * 2):]:
+            if turn.role == "assistant":
+                # Chỉ giữ ~150 ký tự đầu để LLM biết chủ đề đã trả lời,
+                # tránh LLM đọc toàn bộ câu trả lời cũ và re-address lại
+                content = turn.content[:150].rstrip() + "…"
+            else:
+                content = turn.content
+            messages.append({"role": turn.role, "content": content})
+        # Câu hỏi hiện tại
+        messages.append({"role": "user", "content": query})
+        print(f"  [LLM] Multi-turn: system + {len(messages)-2} history msgs + 1 user")
+        return messages
+
     def generate_with_context(self, query: str, context: str, history: list = None) -> str:
         """Sinh câu trả lời. Nếu có history, dùng multi-turn messages."""
-        if history:
-            # System message chứa RAG context và nguyên tắc trả lời
-            messages = [{"role": "system", "content": SYSTEM_LEGAL_PROMPT.format(context=context)}]
-            # Thêm các lượt hội thoại trước (giới hạn MAX_HISTORY_TURNS lượt)
-            for turn in history[-(MAX_HISTORY_TURNS * 2):]:
-                if turn.role == "assistant":
-                    # Chỉ giữ ~150 ký tự đầu để LLM biết chủ đề đã trả lời,
-                    # tránh LLM đọc toàn bộ câu trả lời cũ và re-address lại
-                    content = turn.content[:150].rstrip() + "…"
-                else:
-                    content = turn.content
-                messages.append({"role": turn.role, "content": content})
-            # Câu hỏi hiện tại
-            messages.append({"role": "user", "content": query})
-            print(f"  [LLM] Multi-turn: system + {len(messages)-2} history msgs + 1 user")
+        messages = self._build_chat_messages(query, context, history)
+        if messages is not None:
             return self.generate(messages=messages)
-        else:
-            prompt = PROMPT_TEMPLATE.format(context=context, question=query)
-            return self.generate(prompt=prompt)
+        prompt = PROMPT_TEMPLATE.format(context=context, question=query)
+        return self.generate(prompt=prompt)
+
+    def generate_with_context_stream(self, query: str, context: str, history: list = None) -> Iterator[str]:
+        """Sinh câu trả lời ở chế độ streaming, yield từng đoạn text."""
+        messages = self._build_chat_messages(query, context, history)
+        try:
+            if messages is not None:
+                yield from self._call_stream(messages=messages)
+            else:
+                prompt = PROMPT_TEMPLATE.format(context=context, question=query)
+                yield from self._call_stream(prompt=prompt)
+        except Exception as e:
+            err = str(e)
+            if "429" in err:
+                yield "Hệ thống đang bận, vui lòng thử lại sau."
+            else:
+                raise
 
 
 class LLMManager:
@@ -190,6 +245,9 @@ class LLMManager:
 
     def generate_answer(self, query: str, context: str, history: list = None) -> str:
         return self.llm.generate_with_context(query, context, history=history)
+
+    def generate_answer_stream(self, query: str, context: str, history: list = None) -> Iterator[str]:
+        return self.llm.generate_with_context_stream(query, context, history=history)
 
     def generate(self, prompt: str) -> str:
         return self.llm.generate(prompt=prompt)
