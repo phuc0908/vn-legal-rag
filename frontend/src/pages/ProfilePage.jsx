@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { getBookmarks, getHistory, getUserConversations, updateProfile, changePassword, uploadAvatar } from '../services/api'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import '../styles/ProfilePage.css'
 
@@ -177,6 +178,28 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+
+        {/* ── Subscription badge ── */}
+        {user?.subscription_plan && user.subscription_plan !== 'free' ? (
+          <div className="subscription-banner subscription-banner--active">
+            <span className="sub-badge sub-badge--paid">
+              {user.subscription_plan === 'pro' ? '⭐ Pro' : '✦ Plus'}
+            </span>
+            <span className="sub-text">
+              Gói {user.subscription_plan === 'pro' ? 'Pro' : 'Plus'} — hết hạn{' '}
+              {user.subscription_expires_at
+                ? new Date(user.subscription_expires_at).toLocaleDateString('vi-VN')
+                : '—'}
+            </span>
+            <Link to="/bang-gia" className="sub-upgrade-link">Gia hạn</Link>
+          </div>
+        ) : (
+          <div className="subscription-banner subscription-banner--free">
+            <span className="sub-badge sub-badge--free">Miễn phí</span>
+            <span className="sub-text">Nâng cấp để dùng không giới hạn</span>
+            <Link to="/bang-gia" className="sub-upgrade-link sub-upgrade-link--cta">Nâng cấp ngay</Link>
+          </div>
+        )}
 
         {/* ── Stats ── */}
         <div className="stats-row">

@@ -63,7 +63,14 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: Optional[str] = None
 
-    # CORS — thêm ngrok URL vào đây khi dùng ngrok
+    # PayOS Payment Gateway
+    PAYOS_CLIENT_ID:     str = ""
+    PAYOS_API_KEY:       str = ""
+    PAYOS_CHECKSUM_KEY:  str = ""
+    PAYOS_RETURN_URL:    str = "http://localhost:5173/payment/result"
+    PAYOS_CANCEL_URL:    str = "http://localhost:5173/payment/cancel"
+
+    # CORS — ngrok URL
     # Ví dụ: ALLOWED_ORIGINS=["https://your-name.ngrok-free.app","http://localhost:3000"]
     ALLOWED_ORIGINS: list = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
 

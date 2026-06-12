@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import {
@@ -229,7 +229,7 @@ function LimitsTab() {
             </thead>
             <tbody>
               {users.map((u, i) => (
-                <tr key={u.id} className={u.is_active === false ? 'row-banned' : ''}>
+                <tr key={u.id} className={u.is_active == false ? 'row-banned' : ''}>
                   <td className="td-num">{i + 1}</td>
                   <td className="td-bold">{u.username}</td>
                   <td>{u.full_name || <em className="empty">—</em>}</td>
@@ -242,7 +242,7 @@ function LimitsTab() {
                   <td>
                     {u.is_admin
                       ? <em className="empty">—</em>
-                      : u.is_active === false
+                      : u.is_active == false
                         ? <span className="badge badge-banned">Bị ban</span>
                         : <span className="badge badge-active">Hoạt động</span>
                     }
@@ -280,16 +280,16 @@ function LimitsTab() {
                           </>
                         ) : (
                           <>
-                            <button className="limit-btn limit-btn--edit" onClick={() => startEdit(u)} disabled={u.is_active === false}>Sửa</button>
+                            <button className="limit-btn limit-btn--edit" onClick={() => startEdit(u)} disabled={u.is_active == false}>Sửa</button>
                             {u.daily_question_limit !== null && (
-                              <button className="limit-btn limit-btn--reset" onClick={() => handleReset(u.id)} disabled={saving || u.is_active === false}>Reset</button>
+                              <button className="limit-btn limit-btn--reset" onClick={() => handleReset(u.id)} disabled={saving || u.is_active == false}>Reset</button>
                             )}
                             <button
-                              className={`limit-btn ${u.is_active === false ? 'limit-btn--unban' : 'limit-btn--ban'}`}
+                              className={`limit-btn ${u.is_active == false ? 'limit-btn--unban' : 'limit-btn--ban'}`}
                               onClick={() => handleToggleBan(u.id)}
                               disabled={saving}
                             >
-                              {u.is_active === false ? 'Mở khóa' : 'Ban'}
+                              {u.is_active == false ? 'Mở khóa' : 'Ban'}
                             </button>
                           </>
                         )}
@@ -308,9 +308,12 @@ function LimitsTab() {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
+const VALID_TABS = ['overview', 'activity', 'users', 'content', 'limits']
+
 export default function AdminPage() {
   const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [overview, setOverview] = useState(null)
   const [topUsers, setTopUsers] = useState([])
@@ -319,7 +322,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [activeTab, setActiveTab] = useState('overview')
+  const rawTab = searchParams.get('tab')
+  const activeTab = VALID_TABS.includes(rawTab) ? rawTab : 'overview'
+  const setActiveTab = (tab) => setSearchParams({ tab }, { replace: true })
+
   const [activityDays, setActivityDays] = useState(30)
   const [activityData, setActivityData] = useState(null)
   const [activityLoading, setActivityLoading] = useState(false)
@@ -503,7 +509,7 @@ export default function AdminPage() {
                       </thead>
                       <tbody>
                         {topUsers.map((u, i) => (
-                          <tr key={u.id} className={u.is_active === false ? 'row-banned' : ''}>
+                          <tr key={u.id} className={u.is_active == false ? 'row-banned' : ''}>
                             <td className="td-num">{i + 1}</td>
                             <td className="td-bold">{u.username}</td>
                             <td>{u.full_name || <em className="empty">—</em>}</td>
@@ -519,7 +525,7 @@ export default function AdminPage() {
                               }
                             </td>
                             <td>
-                              {u.is_active === false
+                              {u.is_active == false
                                 ? <span className="badge badge-banned">Bị ban</span>
                                 : <span className="badge badge-active">Hoạt động</span>
                               }

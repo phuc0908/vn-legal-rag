@@ -140,6 +140,22 @@
   transform: translateY(-1px);
 }
 
+.upgrade-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  text-decoration: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.upgrade-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
 .logo-text {
   display: flex;
   flex-direction: column;
