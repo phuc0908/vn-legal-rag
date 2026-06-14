@@ -60,8 +60,9 @@ export default function ChatPage() {
     }
   }, [conversations.length])
 
-  // Pre-fill initial query from URL ?q=
+  // Pre-fill initial query from URL ?q= và module từ ?module=
   const initialQuery = searchParams.get('q') || ''
+  const initialModule = searchParams.get('module') || null
 
   // Render Auth Guard if not logged in
   if (!isAuthenticated) {
@@ -111,7 +112,7 @@ export default function ChatPage() {
         ) : (
           <ChatWindow messages={currentConversation?.messages || []} />
         )}
-        <InputArea conversation={currentConversation} initialQuery={initialQuery} />
+        <InputArea conversation={currentConversation} initialQuery={initialQuery} initialModule={initialModule} />
       </div>
     </div>
   )

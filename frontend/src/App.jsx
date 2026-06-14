@@ -11,6 +11,7 @@ import SavedPage from './pages/SavedPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminPage from './pages/AdminPage'
 import PricingPage from './pages/PricingPage'
+import DivorceRoadmapPage from './pages/DivorceRoadmapPage'
 import PaymentResultPage from './pages/PaymentResultPage'
 import { useThemeStore } from './store/themeStore'
 import './App.css'
@@ -34,6 +35,7 @@ function App() {
         <Route path="/ho-so" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/bang-gia" element={<PricingPage />} />
+        <Route path="/lo-trinh-ly-hon" element={<DivorceRoadmapPage />} />
         <Route path="/payment/result" element={<PaymentResultPage />} />
         <Route path="/payment/cancel" element={<PaymentResultPage />} />
         <Route path="/login" element={<LoginPage />} />

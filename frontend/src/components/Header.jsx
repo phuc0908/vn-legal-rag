@@ -13,6 +13,7 @@ export default function Header() {
     { to: '/', label: 'Trang chủ' },
     { to: '/phap-dien', label: 'Pháp điển' },
     { to: '/tu-van', label: 'Tư vấn AI' },
+    { to: '/lo-trinh-ly-hon', label: 'Lộ trình ly hôn' },
     { to: '/bang-gia', label: 'Bảng giá' },
   ]
 

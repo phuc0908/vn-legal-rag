@@ -9,12 +9,14 @@ const MODULES = [
   { id: 'hon_nhan',  label: 'Hôn nhân & Gia đình',  icon: '👨‍👩‍👧' },
 ]
 
-export default function InputArea({ conversation, initialQuery = '' }) {
+export default function InputArea({ conversation, initialQuery = '', initialModule = null }) {
   const [input, setInput] = useState(initialQuery)
   const [chudeList, setChudeList] = useState([])
   const [selectedChudeId, setSelectedChudeId] = useState('')
   const [selectedChudeTen, setSelectedChudeTen] = useState('')
-  const [activeModule, setActiveModule] = useState(null)
+  const [activeModule, setActiveModule] = useState(
+    MODULES.some(m => m.id === initialModule) ? initialModule : null
+  )
   const [quota, setQuota] = useState(null)
   const sendQuery = useChatStore((s) => s.sendQuery)
   const pending = useChatStore((s) => s.pending)
