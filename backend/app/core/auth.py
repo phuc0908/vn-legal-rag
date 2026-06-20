@@ -9,6 +9,8 @@ from app.db.database import query_one
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+# Biến thể không bắt buộc đăng nhập: không có token -> trả None thay vì 401
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -52,4 +54,30 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
         )
+    return user
+
+
+async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optional)):
+    """Trả về user nếu token hợp lệ, ngược lại trả None (không raise 401).
+
+    Dùng cho các endpoint công khai nhưng đổi nội dung tùy theo người dùng,
+    ví dụ: khách chưa đăng nhập xem bản teaser, người Pro xem đầy đủ.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+    except Exception:
+        return None
+
+    user = query_one(
+        "SELECT id, username, email, full_name, avatar_url, is_admin, is_active, "
+        "subscription_plan, subscription_expires_at FROM users WHERE username = %s",
+        (username,),
+    )
+    if user is None or not user.get("is_active", True):
+        return None
     return user

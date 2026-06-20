@@ -117,6 +117,20 @@ export const deleteConversation = async (conversationId) => {
   return response.data
 }
 
+// ── Roadmap API ──────────────────────────────────────────────────────────────
+
+// Lấy lộ trình pháp lý ly hôn. Server trả đầy đủ cho Pro, teaser cho người khác.
+export const getDivorceRoadmap = async () => {
+  const response = await apiClient.get('/roadmap/divorce')
+  return response.data
+}
+
+// Tải file mẫu đơn ly hôn (.docx) — chỉ Pro. Trả về Blob để trình duyệt lưu file.
+export const downloadDivorceTemplate = async () => {
+  const response = await apiClient.get('/roadmap/divorce/template', { responseType: 'blob' })
+  return response.data
+}
+
 // ── Chat API ───────────────────────────────────────────────────────────────────
 
 export const sendMessage = async (message, conversationId, chuDeId = null, module = null) => {

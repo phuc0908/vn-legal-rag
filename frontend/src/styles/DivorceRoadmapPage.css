@@ -12,6 +12,19 @@
 .roadmap-hero p { color: var(--text-secondary); font-size: 1.02rem; line-height: 1.6; max-width: 680px; margin: 0 auto; }
 .roadmap-disclaimer { font-size: 0.85rem !important; color: #b45309 !important; margin-top: 14px !important; }
 
+/* ── Nút tải mẫu đơn ── */
+.roadmap-download-btn {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 20px;
+  background: var(--bg-card); color: var(--text-primary);
+  border: 1.5px solid #f59e0b; border-radius: 10px;
+  padding: 10px 20px; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+  text-decoration: none; transition: background 0.15s, opacity 0.15s;
+}
+.roadmap-download-btn:hover:not(:disabled) { background: rgba(245,158,11,0.1); }
+.roadmap-download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.roadmap-download-btn--locked { border-color: var(--border-color); color: var(--text-secondary); }
+.roadmap-download-btn--locked:hover { background: var(--bg-hover); }
+
 /* ── CTA banner (non-Pro) ── */
 .roadmap-cta-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -27,6 +40,13 @@
   text-decoration: none; white-space: nowrap; transition: opacity 0.15s;
 }
 .roadmap-cta-btn:hover { opacity: 0.9; }
+
+/* ── Loading / error ── */
+.roadmap-loading { text-align: center; color: var(--text-secondary); padding: 40px 0; }
+.roadmap-error {
+  background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;
+  border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; text-align: center;
+}
 
 /* ── Timeline ── */
 .roadmap-timeline { position: relative; }
