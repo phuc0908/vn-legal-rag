@@ -7,11 +7,19 @@ import { useAuthStore } from '../store/authStore'
 import '../styles/DieuDetailPage.css'
 
 function formatCitation(vbqppl, demucTen) {
-  if (!vbqppl || !demucTen) return null
+  if (!vbqppl) return null
   const dieuMatch = vbqppl.match(/Điều\s+(\d+)/)
-  const yearMatch = vbqppl.match(/số\s+\d+\/(\d{4})\//)
-  if (!dieuMatch || !yearMatch) return null
-  return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+  if (!dieuMatch) return null
+
+  if (vbqppl.includes('Luật')) {
+    if (!demucTen) return null
+    const yearMatch = vbqppl.match(/số\s+\d+\/(\d{4})\//)
+    if (!yearMatch) return null
+    return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+  }
+
+  // Không phải Luật → giữ nguyên "Điều X [tên văn bản]", bỏ phần "có hiệu lực..."
+  return vbqppl.split(/,\s*có hiệu lực/i)[0].replace(/^\(/, '').trim()
 }
 
 function cleanDieuTen(ten) {
