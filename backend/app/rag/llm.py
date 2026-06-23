@@ -230,6 +230,123 @@ class GroqLLM:
                 raise
 
 
+class GeminiLLM:
+
+    def __init__(self):
+        try:
+            import google.generativeai as genai
+        except ImportError:
+            raise ImportError("Cần cài đặt: pip install google-generativeai")
+        self._api_key = _read_env_key("GEMINI_API_KEY") or settings.GEMINI_API_KEY
+        if not self._api_key:
+            raise ValueError("GEMINI_API_KEY chưa được cấu hình trong file .env")
+        self._model_name = _read_env_key("LLM_MODEL") or settings.LLM_MODEL
+        genai.configure(api_key=self._api_key)
+        self._model = genai.GenerativeModel(self._model_name)
+
+    def _call(self, prompt: str = None, messages: list = None,
+              temperature: float = None, max_tokens: int = None) -> str:
+        import google.generativeai as genai
+        gen_config = genai.types.GenerationConfig(
+            temperature=temperature if temperature is not None else settings.LLM_TEMPERATURE,
+            max_output_tokens=max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS,
+        )
+        if messages is not None:
+            # Chuyển đổi format messages sang Gemini
+            system_text = next((m["content"] for m in messages if m["role"] == "system"), "")
+            history = []
+            for m in messages:
+                if m["role"] == "system":
+                    continue
+                role = "user" if m["role"] == "user" else "model"
+                history.append({"role": role, "parts": [m["content"]]})
+            if system_text:
+                model = genai.GenerativeModel(
+                    self._model_name,
+                    system_instruction=system_text,
+                )
+            else:
+                model = self._model
+            chat = model.start_chat(history=history[:-1])
+            resp = chat.send_message(history[-1]["parts"][0], generation_config=gen_config)
+        else:
+            resp = self._model.generate_content(prompt, generation_config=gen_config)
+        return resp.text.strip()
+
+    def _call_stream(self, prompt: str = None, messages: list = None,
+                     temperature: float = None, max_tokens: int = None) -> Iterator[str]:
+        import google.generativeai as genai
+        gen_config = genai.types.GenerationConfig(
+            temperature=temperature if temperature is not None else settings.LLM_TEMPERATURE,
+            max_output_tokens=max_tokens if max_tokens is not None else settings.LLM_MAX_TOKENS,
+        )
+        if messages is not None:
+            system_text = next((m["content"] for m in messages if m["role"] == "system"), "")
+            history = [
+                {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
+                for m in messages if m["role"] != "system"
+            ]
+            model = genai.GenerativeModel(self._model_name, system_instruction=system_text) if system_text else self._model
+            chat = model.start_chat(history=history[:-1])
+            resp = chat.send_message(history[-1]["parts"][0], generation_config=gen_config, stream=True)
+        else:
+            resp = self._model.generate_content(prompt, generation_config=gen_config, stream=True)
+        for chunk in resp:
+            if chunk.text:
+                yield chunk.text
+
+    def generate(self, prompt: str = None, messages: list = None) -> str:
+        try:
+            return self._call(prompt=prompt, messages=messages) or "Không thể tạo câu trả lời. Vui lòng thử lại."
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower():
+                return "Hệ thống đang bận, vui lòng thử lại sau."
+            raise
+
+    def rewrite_query(self, query: str, history: list = None) -> str:
+        if history:
+            history_text = "\n".join(
+                f"{'Người dùng' if t.role == 'user' else 'Trợ lý'}: {t.content[:200]}"
+                for t in history[-(MAX_HISTORY_TURNS * 2):]
+            )
+            prompt = REWRITE_WITH_HISTORY_PROMPT.format(history=history_text, question=query)
+        else:
+            prompt = REWRITE_PROMPT.format(question=query)
+        try:
+            return self._call(prompt=prompt, temperature=0.1, max_tokens=128) or query
+        except Exception:
+            return query
+
+    def _build_chat_messages(self, query: str, context: str, history: list = None):
+        if not history:
+            return None
+        messages = [{"role": "system", "content": SYSTEM_LEGAL_PROMPT.format(context=context)}]
+        for turn in history[-(MAX_HISTORY_TURNS * 2):]:
+            content = turn.content[:150].rstrip() + "…" if turn.role == "assistant" else turn.content
+            messages.append({"role": turn.role, "content": content})
+        messages.append({"role": "user", "content": query})
+        return messages
+
+    def generate_with_context(self, query: str, context: str, history: list = None) -> str:
+        messages = self._build_chat_messages(query, context, history)
+        if messages is not None:
+            return self.generate(messages=messages)
+        return self.generate(prompt=PROMPT_TEMPLATE.format(context=context, question=query))
+
+    def generate_with_context_stream(self, query: str, context: str, history: list = None) -> Iterator[str]:
+        messages = self._build_chat_messages(query, context, history)
+        try:
+            if messages is not None:
+                yield from self._call_stream(messages=messages)
+            else:
+                yield from self._call_stream(prompt=PROMPT_TEMPLATE.format(context=context, question=query))
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower():
+                yield "Hệ thống đang bận, vui lòng thử lại sau."
+            else:
+                raise
+
+
 class LLMManager:
     def __init__(self):
         self.llm = self._init_llm()
@@ -238,6 +355,8 @@ class LLMManager:
         provider = _read_env_key("LLM_PROVIDER") or settings.LLM_PROVIDER
         if provider == "groq":
             return GroqLLM()
+        if provider == "gemini":
+            return GeminiLLM()
         raise ValueError(f"LLM provider không hỗ trợ: {provider}")
 
     def rewrite_query(self, query: str, history: list = None) -> str:
@@ -304,7 +423,7 @@ class TopicRouter:
     Query → topic routing → bounded subset retrieval → generation
     """
 
-    def __init__(self, llm: GroqLLM, topics: list):
+    def __init__(self, llm, topics: list):
         self.llm = llm
         # Map: str(id) → ten (topic name)
         self._topic_map: dict = {str(t["id"]): t["ten"] for t in topics}

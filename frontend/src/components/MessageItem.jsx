@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { Link } from 'react-router-dom'
 import '../styles/MessageItem.css'
 
 export default function MessageItem({ message }) {
@@ -28,9 +29,17 @@ export default function MessageItem({ message }) {
             <ul>
               {message.sources.map((source, idx) => (
                 <li key={idx}>
-                  <a href={source.url} target="_blank" rel="noopener noreferrer">
-                    {source.title}
-                  </a>
+                  {source.url?.startsWith('/') ? (
+                    <Link to={source.url} target="_blank" rel="noopener noreferrer">
+                      {source.title}
+                    </Link>
+                  ) : source.url ? (
+                    <a href={source.url} target="_blank" rel="noopener noreferrer">
+                      {source.title}
+                    </a>
+                  ) : (
+                    <span>{source.title}</span>
+                  )}
                 </li>
               ))}
             </ul>

@@ -6,14 +6,19 @@ import { getChude, getDemuc, getChuong, getMuc, getDieuList } from '../services/
 import { useBrowserStore } from '../store/browserStore'
 import '../styles/LawBrowserPage.css'
 
-// "Điều 3 Thông tư liên tịch số 01/2016/..., có hiệu lực thi hành kể từ ngày 01/03/2016"
-// → "Điều 3 Luật Hôn nhân và gia đình 2016"
 function formatCitation(vbqppl, demucTen) {
-  if (!vbqppl || !demucTen) return null
+  if (!vbqppl) return null
   const dieuMatch = vbqppl.match(/Điều\s+(\d+)/)
-  const yearMatch = vbqppl.match(/số\s+\d+\/(\d{4})\//)
-  if (!dieuMatch || !yearMatch) return null
-  return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+  if (!dieuMatch) return null
+
+  if (vbqppl.includes('Luật')) {
+    if (!demucTen) return null
+    const yearMatch = vbqppl.match(/số\s+\d+\/(\d{4})\//)
+    if (!yearMatch) return null
+    return `Điều ${dieuMatch[1]} Luật ${demucTen} ${yearMatch[1]}`
+  }
+
+  return vbqppl.split(/,\s*có hiệu lực/i)[0].replace(/^\(/, '').trim()
 }
 
 // "Điều 8.4.TL.1.3. Thụ lý, giải quyết..." → "Thụ lý, giải quyết..."
