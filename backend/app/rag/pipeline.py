@@ -379,12 +379,14 @@ class RAGPipeline:
                 continue
             seen.add(key)
 
+            mapc = metadata.get("dieu_mapc")
+            url = metadata.get("url") or (f"/phap-dien/dieu/{mapc}" if mapc else None)
             sources.append(SourceDocument(
                 title=title,
                 content=content[:500],
                 relevance_score=float(doc["score"]),
                 metadata=metadata,
-                url=metadata.get("url"),
+                url=url,
             ))
         return sources
 
