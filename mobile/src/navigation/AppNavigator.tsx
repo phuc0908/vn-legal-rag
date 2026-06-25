@@ -3,7 +3,8 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator as createLawStack } from '@react-navigation/native-stack'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../theme/colors'
 
 // Screens
@@ -58,10 +59,24 @@ function LawNavigator() {
 
 // ── Tab Icon helper ────────────────────────────────────────────────────────────
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+import { Text } from 'react-native'
+
+function TabIcon({
+  name,
+  label,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Ionicons>['name']
+  label: string
+  focused: boolean
+}) {
   return (
     <View style={{ alignItems: 'center', paddingTop: 2 }}>
-      <Text style={{ fontSize: 20 }}>{emoji}</Text>
+      <Ionicons
+        name={focused ? name : (`${name}-outline` as React.ComponentProps<typeof Ionicons>['name'])}
+        size={22}
+        color={focused ? Colors.primary : Colors.textMuted}
+      />
       <Text
         style={{
           fontSize: 10,
@@ -99,7 +114,7 @@ function MainNavigator() {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🏠" label="Trang chủ" focused={focused} />
+            <TabIcon name="home" label="Trang chủ" focused={focused} />
           ),
         }}
       />
@@ -108,7 +123,7 @@ function MainNavigator() {
         component={SearchScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🔍" label="Tra cứu" focused={focused} />
+            <TabIcon name="search" label="Tra cứu" focused={focused} />
           ),
         }}
       />
@@ -117,7 +132,7 @@ function MainNavigator() {
         component={ChatScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🤖" label="Tư vấn AI" focused={focused} />
+            <TabIcon name="chatbubbles" label="Tư vấn AI" focused={focused} />
           ),
         }}
       />
@@ -126,7 +141,7 @@ function MainNavigator() {
         component={LawNavigator}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="📚" label="Pháp điển" focused={focused} />
+            <TabIcon name="library" label="Pháp điển" focused={focused} />
           ),
         }}
       />
@@ -135,7 +150,7 @@ function MainNavigator() {
         component={SavedScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="★" label="Đã lưu" focused={focused} />
+            <TabIcon name="bookmark" label="Đã lưu" focused={focused} />
           ),
         }}
       />

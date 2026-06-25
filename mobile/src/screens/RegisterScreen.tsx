@@ -59,7 +59,6 @@ export default function RegisterScreen({ navigation }: Props) {
             <Text style={styles.backText}>← Quay lại</Text>
           </TouchableOpacity>
           <View style={styles.logoArea}>
-            <Text style={styles.logoEmoji}>⚖️</Text>
             <Text style={styles.logoTitle}>Tạo tài khoản</Text>
             <Text style={styles.logoSub}>Đăng ký để trải nghiệm tư vấn cá nhân hóa</Text>
           </View>
@@ -156,7 +155,7 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
 
   logoArea: { alignItems: 'center', marginBottom: 32 },
-  logoEmoji: { fontSize: 56, marginBottom: 8 },
+
   logoTitle: { fontSize: 24, fontWeight: '800', color: Colors.dark },
   logoSub: { fontSize: 13, color: Colors.textMuted, marginTop: 4, textAlign: 'center' },
 

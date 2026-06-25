@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet, Linking, TouchableOpacity } from 'react-native'
 import Markdown from 'react-native-markdown-display'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../theme/colors'
 import { Message } from '../types'
 
@@ -15,7 +16,7 @@ export default function MessageItem({ message }: Props) {
     <View style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}>
       {!isUser && (
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>⚖️</Text>
+          <Ionicons name="shield-checkmark" size={16} color={Colors.primary} />
         </View>
       )}
 
@@ -52,7 +53,7 @@ export default function MessageItem({ message }: Props) {
 
       {isUser && (
         <View style={[styles.avatar, styles.avatarUser]}>
-          <Text style={styles.avatarText}>👤</Text>
+          <Ionicons name="person" size={16} color={Colors.primary} />
         </View>
       )}
     </View>
@@ -109,7 +110,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarUser: { backgroundColor: Colors.primaryLight },
-  avatarText: { fontSize: 16 },
 
   bubble: {
     maxWidth: '80%',

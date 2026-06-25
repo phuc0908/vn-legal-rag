@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Linking,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -22,7 +23,6 @@ interface PlanInfo {
 }
 
 const PLAN_ORDER = ['free', 'plus', 'pro']
-const PLAN_ICONS: Record<string, string> = { free: '🆓', plus: '⚡', pro: '👑' }
 const PLAN_COLORS: Record<string, string> = { free: '#6b7280', plus: '#2980b9', pro: '#f39c12' }
 const PLAN_FEATURES: Record<string, string[]> = {
   free: ['20 câu hỏi / ngày', 'Tra cứu pháp điển', 'Lưu điều luật yêu thích', 'Lịch sử xem'],
@@ -121,7 +121,13 @@ export default function PricingScreen() {
                 )}
 
                 <View style={styles.planHeader}>
-                  <Text style={styles.planIcon}>{PLAN_ICONS[plan.id]}</Text>
+                  <View style={[styles.planIconBox, { backgroundColor: color + '20' }]}>
+                    <Ionicons
+                      name={plan.id === 'pro' ? 'star' : plan.id === 'plus' ? 'flash' : 'checkmark-circle'}
+                      size={20}
+                      color={color}
+                    />
+                  </View>
                   <View style={styles.planHeaderText}>
                     <Text style={[styles.planName, { color }]}>{plan.name}</Text>
                     {plan.amount > 0 ? (
@@ -225,7 +231,10 @@ const styles = StyleSheet.create({
   currentBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
   planHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  planIcon: { fontSize: 32 },
+  planIconBox: {
+    width: 40, height: 40, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+  },
   planHeaderText: { flex: 1 },
   planName: { fontSize: 17, fontWeight: '800' },
   planPrice: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },

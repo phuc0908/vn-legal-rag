@@ -60,7 +60,6 @@ export default function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
           {/* Logo */}
           <View style={styles.logoArea}>
-            <Text style={styles.logoEmoji}>⚖️</Text>
             <Text style={styles.logoTitle}>Trợ lý Pháp lý VN</Text>
             <Text style={styles.logoSub}>Tra cứu và tư vấn pháp luật Việt Nam</Text>
           </View>
@@ -132,7 +131,6 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
 
   logoArea: { alignItems: 'center', marginBottom: 32 },
-  logoEmoji: { fontSize: 56, marginBottom: 8 },
   logoTitle: { fontSize: 24, fontWeight: '800', color: Colors.dark },
   logoSub: { fontSize: 13, color: Colors.textMuted, marginTop: 4 },
 

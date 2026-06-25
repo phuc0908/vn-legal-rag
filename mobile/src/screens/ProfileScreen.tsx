@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Image, Modal,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -221,7 +222,10 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Bảo mật</Text>
           <TouchableOpacity style={styles.actionRow} onPress={() => setPwdModal(true)}>
-            <Text style={styles.actionRowText}>🔑  Đổi mật khẩu</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="key-outline" size={18} color={Colors.textSecondary} />
+              <Text style={styles.actionRowText}>Đổi mật khẩu</Text>
+            </View>
             <Text style={styles.actionRowArrow}>›</Text>
           </TouchableOpacity>
         </View>
@@ -246,7 +250,7 @@ export default function ProfileScreen() {
               style={styles.upgradeBtn}
               onPress={() => navigation.navigate('Pricing')}
             >
-              <Text style={styles.upgradeBtnText}>⚡ Nâng cấp gói</Text>
+              <Text style={styles.upgradeBtnText}>Nâng cấp gói</Text>
             </TouchableOpacity>
           )}
           {plan !== 'free' && (

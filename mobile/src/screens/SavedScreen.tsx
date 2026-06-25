@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   FlatList, ActivityIndicator, Alert,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -160,7 +161,7 @@ export default function SavedScreen() {
 
   const AuthRequired = ({ msg }: { msg: string }) => (
     <View style={styles.emptyBox}>
-      <Text style={styles.emptyEmoji}>🔒</Text>
+      <Ionicons name="lock-closed-outline" size={48} color={Colors.border} style={{ marginBottom: 12 }} />
       <Text style={styles.emptyTitle}>Cần đăng nhập</Text>
       <Text style={styles.emptyDesc}>{msg}</Text>
       <TouchableOpacity
@@ -177,7 +178,7 @@ export default function SavedScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📚 Thư viện của tôi</Text>
+        <Text style={styles.headerTitle}>Thư viện của tôi</Text>
         <Text style={styles.headerSub}>Điều luật đã lưu và lịch sử xem</Text>
       </View>
 
@@ -188,7 +189,7 @@ export default function SavedScreen() {
           onPress={() => setTab('bookmarks')}
         >
           <Text style={[styles.tabText, tab === 'bookmarks' && styles.tabTextActive]}>
-            ★ Đã lưu{bookmarks.length > 0 ? ` (${bookmarks.length})` : ''}
+            Đã lưu{bookmarks.length > 0 ? ` (${bookmarks.length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -196,7 +197,7 @@ export default function SavedScreen() {
           onPress={() => setTab('history')}
         >
           <Text style={[styles.tabText, tab === 'history' && styles.tabTextActive]}>
-            🕐 Lịch sử{history.length > 0 ? ` (${history.length})` : ''}
+            Lịch sử{history.length > 0 ? ` (${history.length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
@@ -211,7 +212,7 @@ export default function SavedScreen() {
           </View>
         ) : bookmarks.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyEmoji}>☆</Text>
+            <Ionicons name="bookmark-outline" size={48} color={Colors.border} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Chưa có điều luật nào được lưu</Text>
             <Text style={styles.emptyDesc}>Mở bất kỳ điều luật và nhấn "Lưu lại" để thêm vào đây.</Text>
             <TouchableOpacity
@@ -250,7 +251,7 @@ export default function SavedScreen() {
           </View>
         ) : history.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyEmoji}>🕐</Text>
+            <Ionicons name="time-outline" size={48} color={Colors.border} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Chưa có lịch sử xem</Text>
             <Text style={styles.emptyDesc}>Các điều luật bạn đã xem sẽ tự động xuất hiện ở đây.</Text>
             <TouchableOpacity
@@ -321,7 +322,6 @@ const styles = StyleSheet.create({
   loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.dark, marginBottom: 8, textAlign: 'center' },
   emptyDesc: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 18, marginBottom: 20 },
   ctaBtn: {
