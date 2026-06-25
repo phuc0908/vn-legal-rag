@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, FlatList, Platform,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { getChude } from '../services/api'
 import { Colors } from '../theme/colors'
 import { Chude } from '../types'
@@ -63,7 +64,7 @@ export default function InputArea({ onSend, loading, disabled }: Props) {
           >
             {selectedChudeTen || 'Tất cả chủ đề'}
           </Text>
-          <Text style={styles.topicArrow}>▾</Text>
+          <Ionicons name="chevron-down" size={12} color={Colors.textMuted} />
         </TouchableOpacity>
         {!!selectedChudeId && (
           <TouchableOpacity
@@ -99,7 +100,7 @@ export default function InputArea({ onSend, loading, disabled }: Props) {
           disabled={!input.trim() || loading || disabled}
           activeOpacity={0.8}
         >
-          <Text style={styles.sendBtnText}>{loading ? '⏳' : '➤'}</Text>
+          <Ionicons name={loading ? 'time-outline' : 'send'} size={18} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -194,7 +195,6 @@ const styles = StyleSheet.create({
   },
   topicBtnText: { flex: 1, fontSize: 13, color: Colors.textSecondary },
   topicBtnTextActive: { color: Colors.primary, fontWeight: '600' },
-  topicArrow: { fontSize: 11, color: Colors.textMuted },
 
   clearBtn: {
     width: 24,
@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   sendBtnDisabled: { backgroundColor: '#e0e0e0' },
-  sendBtnText: { fontSize: 16, color: '#fff' },
 
   // Modal picker
   modalOverlay: {

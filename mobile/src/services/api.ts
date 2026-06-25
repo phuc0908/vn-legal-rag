@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 //   - Tìm IP bằng: ipconfig (Windows) hoặc ifconfig (Mac/Linux)
 //   - Ví dụ: http://192.168.1.5:8000/api
 // Android Emulator: http://10.0.2.2:8000/api
-export const API_BASE_URL = 'http://192.168.2.65:8000/api'
+export const API_BASE_URL = 'http://192.168.2.8:8000/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -37,11 +37,11 @@ apiClient.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const login = async (username: string, password: string) => {
-  const formData = new FormData()
-  formData.append('username', username)
-  formData.append('password', password)
-  const response = await apiClient.post('/auth/login', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const params = new URLSearchParams()
+  params.append('username', username)
+  params.append('password', password)
+  const response = await apiClient.post('/auth/login', params.toString(), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   })
   return response.data as { access_token: string; token_type: string }
 }
@@ -59,6 +59,33 @@ export const register = async (data: {
 export const getMe = async () => {
   const response = await apiClient.get('/auth/me')
   return response.data
+}
+
+export const updateProfile = async (data: { full_name?: string; email?: string }) => {
+  const response = await apiClient.put('/auth/me', data)
+  return response.data
+}
+
+export const changePassword = async (current_password: string, new_password: string) => {
+  const response = await apiClient.put('/auth/me/password', { current_password, new_password })
+  return response.data
+}
+
+// ── Subscription / Payment ────────────────────────────────────────────────────
+
+export const getPlans = async () => {
+  const response = await apiClient.get('/subscription/plans')
+  return response.data as Record<string, { id: string; name: string; amount: number; days: number; daily_limit: number }>
+}
+
+export const createPayment = async (plan: string) => {
+  const response = await apiClient.post(`/subscription/create/${plan}`)
+  return response.data as { checkout_url: string; order_code: number; amount: number; plan: string }
+}
+
+export const getMySubscription = async () => {
+  const response = await apiClient.get('/subscription/my-subscription')
+  return response.data as { plan: string; expires_at: string | null }
 }
 
 // ── Conversations ─────────────────────────────────────────────────────────────
@@ -85,13 +112,15 @@ export const deleteConversation = async (id: string) => {
 export const sendMessage = async (
   message: string,
   conversationId: string | null,
-  chuDeId: string | null = null
+  chuDeId: string | null = null,
+  module: string | null = null
 ) => {
   const body: Record<string, unknown> = {
     query: message,
     conversation_id: conversationId ?? undefined,
   }
   if (chuDeId) body.chu_de_id = chuDeId
+  if (module) body.module = module
   const response = await apiClient.post('/query', body)
   return response.data
 }

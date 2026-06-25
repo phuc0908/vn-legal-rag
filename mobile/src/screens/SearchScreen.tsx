@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native'
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import Markdown from 'react-native-markdown-display'
+import { Ionicons } from '@expo/vector-icons'
 import { sendMessage } from '../services/api'
 import { Colors } from '../theme/colors'
 import { MainTabParamList } from '../types'
@@ -82,13 +83,13 @@ export default function SearchScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🔍 Tra cứu Pháp luật</Text>
+        <Text style={styles.headerTitle}>Tra cứu Pháp luật</Text>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchArea}>
         <View style={styles.searchRow}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={18} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             value={inputValue}
@@ -112,7 +113,7 @@ export default function SearchScreen() {
         {/* Empty state */}
         {!searched && !loading && (
           <View style={styles.center}>
-            <Text style={styles.emptyEmoji}>⚖️</Text>
+            <Ionicons name="document-text-outline" size={48} color={Colors.border} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Tra cứu văn bản pháp luật</Text>
             <Text style={styles.emptyDesc}>
               Nhập từ khóa, câu hỏi hoặc tên điều luật vào ô tìm kiếm phía trên để bắt đầu.
@@ -127,7 +128,7 @@ export default function SearchScreen() {
                   style={styles.suggestItem}
                   onPress={() => { setInputValue(s); setQuery(s); doSearch(s) }}
                 >
-                  <Text style={styles.suggestIcon}>🔎</Text>
+                  <Ionicons name="search-outline" size={14} color={Colors.textMuted} />
                   <Text style={styles.suggestText}>{s}</Text>
                   <Text style={styles.suggestArrow}>›</Text>
                 </TouchableOpacity>
@@ -147,7 +148,7 @@ export default function SearchScreen() {
         {/* Error */}
         {error && !loading && (
           <View style={styles.center}>
-            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Ionicons name="warning-outline" size={48} color="#e74c3c" style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Không thể kết nối</Text>
             <Text style={styles.emptyDesc}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={() => doSearch(query)}>
@@ -173,7 +174,7 @@ export default function SearchScreen() {
             {/* Answer card */}
             <View style={styles.answerCard}>
               <View style={styles.answerLabel}>
-                <Text style={styles.answerLabelText}>⚖️  Thông tin pháp lý</Text>
+                <Text style={styles.answerLabelText}>Thông tin pháp lý</Text>
               </View>
               <Markdown style={mdStyles}>{result.answer}</Markdown>
 
@@ -205,10 +206,10 @@ export default function SearchScreen() {
             {/* Actions */}
             <View style={styles.actions}>
               <TouchableOpacity style={[styles.actionBtn, styles.actionBtnPrimary]} onPress={handleAskAI}>
-                <Text style={styles.actionBtnPrimaryText}>🤖 Hỏi thêm với AI</Text>
+                <Text style={styles.actionBtnPrimaryText}>Hỏi thêm với AI</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => doSearch(query)}>
-                <Text style={styles.actionBtnText}>🔄 Tìm lại</Text>
+                <Text style={styles.actionBtnText}>Tìm lại</Text>
               </TouchableOpacity>
             </View>
 
@@ -221,7 +222,7 @@ export default function SearchScreen() {
                   style={styles.suggestItem}
                   onPress={() => { setInputValue(s); setQuery(s); doSearch(s) }}
                 >
-                  <Text style={styles.suggestIcon}>🔎</Text>
+                  <Ionicons name="search-outline" size={14} color={Colors.textMuted} />
                   <Text style={styles.suggestText}>{s}</Text>
                   <Text style={styles.suggestArrow}>›</Text>
                 </TouchableOpacity>
@@ -230,7 +231,6 @@ export default function SearchScreen() {
 
             {/* AI CTA */}
             <View style={styles.aiCtaBox}>
-              <Text style={styles.aiCtaEmoji}>🤖</Text>
               <Text style={styles.aiCtaTitle}>Cần giải thích chi tiết?</Text>
               <Text style={styles.aiCtaDesc}>
                 Trợ lý AI có thể phân tích và giải thích điều luật theo ngôn ngữ dễ hiểu
@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
   searchBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   center: { padding: 32, alignItems: 'center' },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.dark, marginBottom: 8, textAlign: 'center' },
   emptyDesc: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 18, marginBottom: 20 },
   loadingText: { marginTop: 12, color: Colors.textMuted, fontSize: 14, textAlign: 'center' },
@@ -405,7 +404,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  suggestIcon: { fontSize: 14 },
   suggestText: { flex: 1, fontSize: 13, color: Colors.text },
   suggestArrow: { fontSize: 16, color: Colors.textMuted },
 
@@ -416,7 +414,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  aiCtaEmoji: { fontSize: 32 },
   aiCtaTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   aiCtaDesc: { fontSize: 13, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 18, marginBottom: 4 },
 })

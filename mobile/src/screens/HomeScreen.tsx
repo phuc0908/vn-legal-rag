@@ -6,21 +6,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
 import { getLawStats } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
-import { LawStats, MainTabParamList } from '../types'
+import { LawStats, MainTabParamList, RootStackParamList } from '../types'
 
 type NavProp = BottomTabNavigationProp<MainTabParamList>
+type RootNavProp = NativeStackNavigationProp<RootStackParamList>
 
 const LAW_CATEGORIES = [
-  { icon: '⚖️', label: 'Bộ luật Hình sự', query: 'bộ luật hình sự', color: '#e74c3c' },
-  { icon: '📜', label: 'Bộ luật Dân sự', query: 'bộ luật dân sự', color: '#2980b9' },
-  { icon: '👷', label: 'Luật Lao động', query: 'bộ luật lao động', color: '#27ae60' },
-  { icon: '🏢', label: 'Luật Doanh nghiệp', query: 'luật doanh nghiệp', color: '#8e44ad' },
-  { icon: '🏠', label: 'Luật Đất đai', query: 'luật đất đai', color: '#d35400' },
-  { icon: '💍', label: 'Hôn nhân & Gia đình', query: 'luật hôn nhân gia đình', color: '#c0392b' },
-  { icon: '🚗', label: 'Luật Giao thông', query: 'luật giao thông đường bộ', color: '#16a085' },
-  { icon: '🏛️', label: 'Luật Hành chính', query: 'luật hành chính', color: '#2c3e50' },
+  { abbr: 'HS', label: 'Bộ luật Hình sự', query: 'bộ luật hình sự', color: '#e74c3c' },
+  { abbr: 'DS', label: 'Bộ luật Dân sự', query: 'bộ luật dân sự', color: '#2980b9' },
+  { abbr: 'LĐ', label: 'Luật Lao động', query: 'bộ luật lao động', color: '#27ae60' },
+  { abbr: 'DN', label: 'Luật Doanh nghiệp', query: 'luật doanh nghiệp', color: '#8e44ad' },
+  { abbr: 'ĐĐ', label: 'Luật Đất đai', query: 'luật đất đai', color: '#d35400' },
+  { abbr: 'HN', label: 'Hôn nhân & Gia đình', query: 'luật hôn nhân gia đình', color: '#c0392b' },
+  { abbr: 'GT', label: 'Luật Giao thông', query: 'luật giao thông đường bộ', color: '#16a085' },
+  { abbr: 'HC', label: 'Luật Hành chính', query: 'luật hành chính', color: '#2c3e50' },
 ]
 
 const COMMON_QUESTIONS = [
@@ -34,6 +38,8 @@ const COMMON_QUESTIONS = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavProp>()
+  const rootNav = useNavigation<RootNavProp>()
+  const { isAuthenticated, user } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [lawStats, setLawStats] = useState<LawStats | null>(null)
 
@@ -52,11 +58,23 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerEmoji}>⚖️</Text>
-        <View>
+        <View style={styles.headerTextBlock}>
           <Text style={styles.headerTitle}>Trợ lý Pháp lý VN</Text>
           <Text style={styles.headerSub}>Hệ thống pháp luật Việt Nam</Text>
         </View>
+        <TouchableOpacity
+          style={styles.profileBtn}
+          onPress={() => isAuthenticated ? rootNav.navigate('Profile') : rootNav.navigate('Login')}
+          activeOpacity={0.7}
+        >
+          {isAuthenticated ? (
+            <Text style={styles.profileBtnText}>
+              {(user?.full_name || user?.username || '?').charAt(0).toUpperCase()}
+            </Text>
+          ) : (
+            <Ionicons name="person-outline" size={18} color="#fff" />
+          )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -69,7 +87,7 @@ export default function HomeScreen() {
           </Text>
 
           <View style={styles.searchRow}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color={Colors.textPlaceholder} />
             <TextInput
               style={styles.searchInput}
               placeholder="Nhập điều luật, nội dung pháp lý..."
@@ -128,7 +146,6 @@ export default function HomeScreen() {
           <View style={styles.ctaBadge}>
             <Text style={styles.ctaBadgeText}>Nổi bật</Text>
           </View>
-          <Text style={styles.ctaEmoji}>🤖</Text>
           <Text style={styles.ctaTitle}>Tư vấn AI</Text>
           <Text style={styles.ctaDesc}>
             Đặt câu hỏi bằng tiếng Việt, nhận giải thích chi tiết có trích dẫn điều luật cụ thể.
@@ -151,7 +168,7 @@ export default function HomeScreen() {
                 activeOpacity={0.75}
               >
                 <View style={[styles.catIconWrap, { backgroundColor: cat.color + '18' }]}>
-                  <Text style={styles.catIconText}>{cat.icon}</Text>
+                  <Text style={[styles.catIconText, { color: cat.color }]}>{cat.abbr}</Text>
                 </View>
                 <Text style={styles.catLabel} numberOfLines={2}>{cat.label}</Text>
               </TouchableOpacity>
@@ -188,10 +205,10 @@ export default function HomeScreen() {
               </View>
             </View>
             <View style={styles.phapdienRight}>
-              <Text style={styles.ptreeItem}>📂 Chủ đề</Text>
-              <Text style={[styles.ptreeItem, { paddingLeft: 12 }]}>📋 Đề mục</Text>
-              <Text style={[styles.ptreeItem, { paddingLeft: 24 }]}>📑 Chương</Text>
-              <Text style={[styles.ptreeItem, { paddingLeft: 36 }]}>📄 Điều</Text>
+              <Text style={styles.ptreeItem}>— Chủ đề</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 12 }]}>— Đề mục</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 24 }]}>— Chương</Text>
+              <Text style={[styles.ptreeItem, { paddingLeft: 36 }]}>— Điều</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -205,7 +222,7 @@ export default function HomeScreen() {
               onPress={() => goSearch('tra cứu pháp luật')}
               activeOpacity={0.8}
             >
-              <Text style={styles.featureIcon}>🔍</Text>
+              <Ionicons name="search" size={22} color={Colors.primary} style={{ marginBottom: 8 }} />
               <Text style={styles.featureTitle}>Tra cứu thông minh</Text>
               <Text style={styles.featureDesc}>Tìm kiếm toàn văn, hiểu ngôn ngữ tự nhiên.</Text>
             </TouchableOpacity>
@@ -215,7 +232,7 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.featureBadge}><Text style={styles.featureBadgeText}>Nổi bật</Text></View>
-              <Text style={styles.featureIcon}>🤖</Text>
+              <Ionicons name="chatbubbles" size={22} color="#fff" style={{ marginBottom: 8 }} />
               <Text style={[styles.featureTitle, { color: '#fff' }]}>Tư vấn AI</Text>
               <Text style={[styles.featureDesc, { color: 'rgba(255,255,255,0.8)' }]}>Giải thích chi tiết, trích dẫn điều luật.</Text>
             </TouchableOpacity>
@@ -224,7 +241,7 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate('LawTab')}
               activeOpacity={0.8}
             >
-              <Text style={styles.featureIcon}>📚</Text>
+              <Ionicons name="library" size={22} color={Colors.primary} style={{ marginBottom: 8 }} />
               <Text style={styles.featureTitle}>Dữ liệu đầy đủ</Text>
               <Text style={styles.featureDesc}>Tổng hợp văn bản pháp luật chính thức.</Text>
             </TouchableOpacity>
@@ -237,7 +254,6 @@ export default function HomeScreen() {
           <Text style={styles.sectionSub}>Nhấn để tra cứu ngay</Text>
           {COMMON_QUESTIONS.map((q) => (
             <TouchableOpacity key={q} style={styles.questionCard} onPress={() => goSearch(q)}>
-              <Text style={styles.questionIcon}>❓</Text>
               <Text style={styles.questionText}>{q}</Text>
               <Text style={styles.questionArrow}>→</Text>
             </TouchableOpacity>
@@ -272,9 +288,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: Colors.primary,
   },
-  headerEmoji: { fontSize: 26 },
+  headerTextBlock: { flex: 1 },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)' },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileBtnText: { fontSize: 16, color: '#fff', fontWeight: '700' },
 
   hero: {
     backgroundColor: Colors.primary,
@@ -294,7 +319,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 8,
   },
-  searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, fontSize: 14, color: Colors.text, paddingVertical: 12 },
   searchBtn: {
     backgroundColor: Colors.primaryDark,
@@ -348,7 +372,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   ctaBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  ctaEmoji: { fontSize: 36, marginBottom: 8 },
   ctaTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 8 },
   ctaDesc: { fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 18, marginBottom: 16 },
   ctaBtn: {
@@ -376,7 +399,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   catIconWrap: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  catIconText: { fontSize: 20 },
+  catIconText: { fontSize: 13, fontWeight: '800' },
   catLabel: { flex: 1, fontSize: 12, fontWeight: '600', color: Colors.dark },
 
   questionCard: {
@@ -390,7 +413,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  questionIcon: { fontSize: 16 },
   questionText: { flex: 1, fontSize: 13, color: Colors.text },
   questionArrow: { fontSize: 16, color: Colors.textMuted },
 
@@ -451,7 +473,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   featureBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  featureIcon: { fontSize: 28, marginBottom: 4 },
   featureTitle: { fontSize: 14, fontWeight: '800', color: Colors.dark },
   featureDesc: { fontSize: 12, color: Colors.textMuted, lineHeight: 17 },
 

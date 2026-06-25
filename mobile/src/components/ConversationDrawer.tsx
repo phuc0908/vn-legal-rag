@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
 import { Conversation } from '../types'
@@ -54,7 +55,7 @@ export default function ConversationDrawer({
         <SafeAreaView style={styles.drawer} edges={['top', 'bottom']}>
           {/* Logo */}
           <View style={styles.logo}>
-            <Text style={styles.logoTitle}>⚖ Trợ lý Pháp lý</Text>
+            <Text style={styles.logoTitle}>Trợ lý Pháp lý</Text>
             <Text style={styles.logoSub}>Luật pháp Việt Nam</Text>
           </View>
 
@@ -124,7 +125,7 @@ export default function ConversationDrawer({
                 ])
               }}
             >
-              <Text style={styles.logoutText}>↩</Text>
+              <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.7)" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -220,5 +221,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoutText: { fontSize: 18, color: 'rgba(255,255,255,0.7)' },
 })

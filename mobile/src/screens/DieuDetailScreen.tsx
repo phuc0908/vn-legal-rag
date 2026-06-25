@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator,
   TouchableOpacity, Linking,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -92,7 +93,7 @@ export default function DieuDetailScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <Text style={styles.errorEmoji}>😕</Text>
+          <Ionicons name="alert-circle-outline" size={48} color={Colors.border} style={{ marginBottom: 12 }} />
           <Text style={styles.errorText}>{error || 'Không tìm thấy điều luật.'}</Text>
         </View>
       </SafeAreaView>
@@ -117,9 +118,11 @@ export default function DieuDetailScreen() {
               <ActivityIndicator size="small" color={bookmarked ? '#fff' : Colors.primary} />
             ) : (
               <>
-                <Text style={[styles.bookmarkIcon, bookmarked && styles.bookmarkIconActive]}>
-                  {bookmarked ? '★' : '☆'}
-                </Text>
+                <Ionicons
+                  name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+                  size={16}
+                  color={bookmarked ? '#fff' : Colors.primary}
+                />
                 <Text style={[styles.bookmarkText, bookmarked && styles.bookmarkTextActive]}>
                   {bookmarked ? 'Đã lưu' : 'Lưu lại'}
                 </Text>
@@ -149,7 +152,7 @@ export default function DieuDetailScreen() {
           <Text style={styles.title}>{dieu.ten}</Text>
 
           {dieu.chuong_ten && (
-            <Text style={styles.chuongTen}>📑 {dieu.chuong_ten}</Text>
+            <Text style={styles.chuongTen}>{dieu.chuong_ten}</Text>
           )}
 
           {dieu.vbqppl && (
@@ -158,7 +161,7 @@ export default function DieuDetailScreen() {
               onPress={() => dieu.vbqppl_link && Linking.openURL(dieu.vbqppl_link)}
               activeOpacity={dieu.vbqppl_link ? 0.7 : 1}
             >
-              <Text style={styles.vbIcon}>📄</Text>
+              <Ionicons name="document-outline" size={14} color={Colors.textMuted} />
               <Text style={[styles.vbText, !!dieu.vbqppl_link && styles.vbLink]} numberOfLines={2}>
                 {dieu.vbqppl}
               </Text>
@@ -233,7 +236,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   loadingText: { marginTop: 12, color: Colors.textMuted },
-  errorEmoji: { fontSize: 48, marginBottom: 12 },
   errorText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center' },
 
   actionBar: {
@@ -259,8 +261,6 @@ const styles = StyleSheet.create({
   bookmarkBtnActive: {
     backgroundColor: Colors.primary,
   },
-  bookmarkIcon: { fontSize: 16, color: Colors.primary },
-  bookmarkIconActive: { color: '#fff' },
   bookmarkText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
   bookmarkTextActive: { color: '#fff' },
 
@@ -292,7 +292,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  vbIcon: { fontSize: 14, flexShrink: 0 },
   vbText: { flex: 1, fontSize: 12, color: Colors.textSecondary },
   vbLink: { color: Colors.primary, textDecorationLine: 'underline' },
   vbArrow: { fontSize: 14, color: Colors.primary, flexShrink: 0 },

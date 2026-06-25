@@ -5,6 +5,10 @@ export interface User {
   username: string
   email?: string
   full_name?: string
+  avatar_url?: string
+  is_admin?: boolean
+  subscription_plan?: 'free' | 'plus' | 'pro'
+  subscription_expires_at?: string | null
 }
 
 export interface AuthState {
@@ -14,6 +18,21 @@ export interface AuthState {
   setAuth: (user: User | null, token: string) => void
   logout: () => void
   updateUser: (user: User) => void
+}
+
+// ── Subscription / Payment ────────────────────────────────────────────────────
+
+export interface Plan {
+  id: string
+  name: string
+  amount: number
+  days: number
+  daily_limit: number
+}
+
+export interface Subscription {
+  plan: 'free' | 'plus' | 'pro'
+  expires_at: string | null
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
@@ -113,6 +132,8 @@ export type RootStackParamList = {
   Main: undefined
   Login: undefined
   Register: undefined
+  Profile: undefined
+  Pricing: undefined
 }
 
 export type MainTabParamList = {

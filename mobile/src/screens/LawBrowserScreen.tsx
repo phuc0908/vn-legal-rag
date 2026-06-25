@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
 import { getChude, getDemuc, getChuong, getDieuList } from '../services/api'
 import { Colors } from '../theme/colors'
 import { Chude, Demuc, Chuong, DieuItem, LawStackParamList } from '../types'
@@ -129,7 +130,7 @@ export default function LawBrowserScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.itemIcon}>
-        <Text style={styles.itemIconText}>📂</Text>
+        <Ionicons name="folder-outline" size={18} color={Colors.primary} />
       </View>
       <Text style={styles.itemText} numberOfLines={2}>{item.ten}</Text>
       <Text style={styles.itemArrow}>›</Text>
@@ -143,7 +144,7 @@ export default function LawBrowserScreen() {
       activeOpacity={0.7}
     >
       <View style={[styles.itemIcon, { backgroundColor: '#eef6ff' }]}>
-        <Text style={styles.itemIconText}>📋</Text>
+        <Ionicons name="list-outline" size={18} color="#2980b9" />
       </View>
       <Text style={styles.itemText} numberOfLines={2}>{item.ten}</Text>
       <Text style={styles.itemArrow}>›</Text>
@@ -157,7 +158,7 @@ export default function LawBrowserScreen() {
       activeOpacity={0.7}
     >
       <View style={[styles.itemIcon, { backgroundColor: '#f0fff4' }]}>
-        <Text style={styles.itemIconText}>📑</Text>
+        <Ionicons name="document-text-outline" size={18} color="#27ae60" />
       </View>
       <Text style={styles.itemText} numberOfLines={2}>{item.ten}</Text>
       <Text style={styles.itemArrow}>›</Text>
@@ -316,7 +317,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  itemIconText: { fontSize: 18 },
   itemText: { flex: 1, fontSize: 14, color: Colors.dark, fontWeight: '500', lineHeight: 20 },
   itemArrow: { fontSize: 20, color: Colors.textMuted, flexShrink: 0 },
 
