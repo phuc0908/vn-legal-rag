@@ -6,11 +6,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { getLawStats } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import { Colors } from '../theme/colors'
-import { LawStats, MainTabParamList } from '../types'
+import { LawStats, MainTabParamList, RootStackParamList } from '../types'
 
 type NavProp = BottomTabNavigationProp<MainTabParamList>
+type RootNavProp = NativeStackNavigationProp<RootStackParamList>
 
 const LAW_CATEGORIES = [
   { icon: '⚖️', label: 'Bộ luật Hình sự', query: 'bộ luật hình sự', color: '#e74c3c' },
@@ -34,6 +37,8 @@ const COMMON_QUESTIONS = [
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavProp>()
+  const rootNav = useNavigation<RootNavProp>()
+  const { isAuthenticated, user } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [lawStats, setLawStats] = useState<LawStats | null>(null)
 
@@ -53,10 +58,21 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerEmoji}>⚖️</Text>
-        <View>
+        <View style={styles.headerTextBlock}>
           <Text style={styles.headerTitle}>Trợ lý Pháp lý VN</Text>
           <Text style={styles.headerSub}>Hệ thống pháp luật Việt Nam</Text>
         </View>
+        <TouchableOpacity
+          style={styles.profileBtn}
+          onPress={() => isAuthenticated ? rootNav.navigate('Profile') : rootNav.navigate('Login')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.profileBtnText}>
+            {isAuthenticated
+              ? (user?.full_name || user?.username || '?').charAt(0).toUpperCase()
+              : '👤'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -273,8 +289,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   headerEmoji: { fontSize: 26 },
+  headerTextBlock: { flex: 1 },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)' },
+  profileBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileBtnText: { fontSize: 16, color: '#fff', fontWeight: '700' },
 
   hero: {
     backgroundColor: Colors.primary,

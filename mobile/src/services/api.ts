@@ -61,6 +61,33 @@ export const getMe = async () => {
   return response.data
 }
 
+export const updateProfile = async (data: { full_name?: string; email?: string }) => {
+  const response = await apiClient.put('/auth/me', data)
+  return response.data
+}
+
+export const changePassword = async (current_password: string, new_password: string) => {
+  const response = await apiClient.put('/auth/me/password', { current_password, new_password })
+  return response.data
+}
+
+// ── Subscription / Payment ────────────────────────────────────────────────────
+
+export const getPlans = async () => {
+  const response = await apiClient.get('/subscription/plans')
+  return response.data as Record<string, { id: string; name: string; amount: number; days: number; daily_limit: number }>
+}
+
+export const createPayment = async (plan: string) => {
+  const response = await apiClient.post(`/subscription/create/${plan}`)
+  return response.data as { checkout_url: string; order_code: number; amount: number; plan: string }
+}
+
+export const getMySubscription = async () => {
+  const response = await apiClient.get('/subscription/my-subscription')
+  return response.data as { plan: string; expires_at: string | null }
+}
+
 // ── Conversations ─────────────────────────────────────────────────────────────
 
 export const getUserConversations = async () => {
@@ -85,13 +112,15 @@ export const deleteConversation = async (id: string) => {
 export const sendMessage = async (
   message: string,
   conversationId: string | null,
-  chuDeId: string | null = null
+  chuDeId: string | null = null,
+  module: string | null = null
 ) => {
   const body: Record<string, unknown> = {
     query: message,
     conversation_id: conversationId ?? undefined,
   }
   if (chuDeId) body.chu_de_id = chuDeId
+  if (module) body.module = module
   const response = await apiClient.post('/query', body)
   return response.data
 }

@@ -15,6 +15,8 @@ import ChatScreen from '../screens/ChatScreen'
 import LawBrowserScreen from '../screens/LawBrowserScreen'
 import DieuDetailScreen from '../screens/DieuDetailScreen'
 import SavedScreen from '../screens/SavedScreen'
+import ProfileScreen from '../screens/ProfileScreen'
+import PricingScreen from '../screens/PricingScreen'
 
 import type {
   RootStackParamList,
@@ -157,6 +159,16 @@ export default function AppNavigator() {
           name="Register"
           component={RegisterScreen}
           options={{ presentation: 'modal' }}
+        />
+        <RootStack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ presentation: 'card' }}
+        />
+        <RootStack.Screen
+          name="Pricing"
+          component={PricingScreen}
+          options={{ presentation: 'card' }}
         />
       </RootStack.Navigator>
     </NavigationContainer>

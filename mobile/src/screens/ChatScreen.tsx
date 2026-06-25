@@ -15,6 +15,16 @@ import InputArea from '../components/InputArea'
 import ConversationDrawer from '../components/ConversationDrawer'
 import { Message, RootStackParamList } from '../types'
 
+const MODULES = [
+  { key: null, label: 'Tất cả' },
+  { key: 'hon_nhan', label: '💍 Hôn nhân' },
+]
+
+const MODULE_HINTS: Record<string, string[]> = {
+  all: ['Tội trộm cắp bị phạt bao nhiêu?', 'Thủ tục đăng ký kết hôn'],
+  hon_nhan: ['Thủ tục ly hôn đơn phương', 'Chia tài sản sau khi ly hôn'],
+}
+
 export default function ChatScreen() {
   const { isAuthenticated } = useAuthStore()
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
@@ -27,6 +37,7 @@ export default function ChatScreen() {
 
   const [sending, setSending] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [selectedModule, setSelectedModule] = useState<string | null>(null)
   const listRef = useRef<FlatList>(null)
 
   const currentConversation = conversations.find((c) => c.id === currentConversationId) || null
@@ -60,7 +71,7 @@ export default function ChatScreen() {
     setSending(true)
 
     try {
-      const response = await sendMessage(text, currentConversation.id, chuDeId)
+      const response = await sendMessage(text, currentConversation.id, chuDeId, selectedModule)
       addMessage(currentConversation.id, {
         role: 'assistant',
         content: response.answer,
@@ -118,6 +129,25 @@ export default function ChatScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Module Tab Strip */}
+      <View style={styles.moduleTabs}>
+        {MODULES.map((m) => {
+          const active = selectedModule === m.key
+          return (
+            <TouchableOpacity
+              key={String(m.key)}
+              style={[styles.moduleTab, active && styles.moduleTabActive]}
+              onPress={() => setSelectedModule(m.key)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.moduleTabText, active && styles.moduleTabTextActive]}>
+                {m.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -139,7 +169,7 @@ export default function ChatScreen() {
                   Trợ lý AI sẽ giúp bạn tìm hiểu về các vấn đề pháp lý dựa trên văn bản pháp luật chính thức.
                 </Text>
                 <View style={styles.hintRow}>
-                  {['Tội trộm cắp bị phạt bao nhiêu?', 'Thủ tục đăng ký kết hôn'].map((q) => (
+                  {(MODULE_HINTS[selectedModule ?? 'all'] ?? MODULE_HINTS.all).map((q) => (
                     <TouchableOpacity
                       key={q}
                       style={styles.hintTag}
@@ -225,6 +255,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   newBtnText: { fontSize: 18, color: Colors.textMuted },
+
+  moduleTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 8,
+  },
+  moduleTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.borderDark,
+    backgroundColor: Colors.inputBg,
+  },
+  moduleTabActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  moduleTabText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  moduleTabTextActive: { color: '#fff', fontWeight: '700' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 12, color: Colors.textMuted, fontSize: 14 },
