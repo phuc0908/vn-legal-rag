@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 //   - Tìm IP bằng: ipconfig (Windows) hoặc ifconfig (Mac/Linux)
 //   - Ví dụ: http://192.168.1.5:8000/api
 // Android Emulator: http://10.0.2.2:8000/api
-export const API_BASE_URL = 'http://192.168.2.65:8000/api'
+export const API_BASE_URL = 'http://192.168.2.8:8000/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -37,11 +37,11 @@ apiClient.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const login = async (username: string, password: string) => {
-  const formData = new FormData()
-  formData.append('username', username)
-  formData.append('password', password)
-  const response = await apiClient.post('/auth/login', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const params = new URLSearchParams()
+  params.append('username', username)
+  params.append('password', password)
+  const response = await apiClient.post('/auth/login', params.toString(), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   })
   return response.data as { access_token: string; token_type: string }
 }
