@@ -2,6 +2,12 @@
 
 Ứng dụng hỏi đáp pháp luật Việt Nam sử dụng kỹ thuật RAG (Retrieval-Augmented Generation).
 
+## Demo
+
+
+Uploading demo_DoAnTotNghiep.mp4…
+
+
 ## Kiến trúc
 
 ```
