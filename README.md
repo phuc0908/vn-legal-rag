@@ -5,7 +5,9 @@
 ## Demo
 
 
-Uploading demo_DoAnTotNghiep.mp4…
+
+https://github.com/user-attachments/assets/38fa00ca-1122-48d9-9471-c360898f5b4b
+
 
 
 ## Kiến trúc
